@@ -235,10 +235,74 @@ def get_minutes(timestr: str) -> int:
     result = re.search("^(\d{2})\:(\d{2})$",timestr)
     assert result, "illegal time format"        
     return int(result.groups()[0]) * 60 + int(result.groups()[1])
+
+async def create_payment(
+    device_id: str,
+    switch_id: str,
+    payload: Optional[str] = None,
+    payhash: Optional[str] = None,
+    sats: Optional[int] = 0,
+) -> LnurldevicePayment:
+    payment_id = urlsafe_short_hash()
     
+    # Reduce the quantity + check the new quantity
+    switch = await get_switch(switch_id)
+    if switch.quantity is not None and switch.quantity > 0:
+        new_quantity = switch.quantity - 1
+        await update_switch_quantity(switch_id, new_quantity)
+        if new_quantity == 0:
+            # Logic to set the status to CLOSED (if necessary)
+            pass
+    else:
+        # If sold out error message
+        raise Exception("Product sold out")
+    
+    await db.execute(
+        """
+        INSERT INTO devicetimer.payment (
+            id,
+            deviceid,
+            switchid,
+            payload,
+            payhash,
+            sats
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (payment_id, device_id, switch_id, payload, payhash, sats),
+    )
+    
+    payment = await get_payment(payment_id)
+    assert payment, "Couldnt retrieve newly created payment"
+    return payment
+
+async def update_switch_quantity(switch_id: str, new_quantity: int):
+    # Updating the quantity in the database
+    await db.execute(
+        "UPDATE devicetimer.switch SET quantity = ? WHERE id = ?",
+        (new_quantity, switch_id),
+    )
+
+async def get_switch(switch_id: str):
+    row = await db.fetchone(
+        "SELECT * FROM devicetimer.switch WHERE id = ?",
+        (switch_id,),
+    )
+    if row:
+        return LnurldeviceSwitch(**row)
+    else:
+        return None
+
 async def get_payment_allowed(
         device: Lnurldevice, switch: LnurldeviceSwitch
     ) -> PaymentAllowed:
+
+async def get_payment_allowed(
+        device: Lnurldevice, switch: LnurldeviceSwitch
+    ) -> PaymentAllowed:
+
+    if switch.quantity is not None and switch.quantity <= 0:
+        return PaymentAllowed.CLOSED
 
     now = datetime.now()
     minutes = now.hour * 60 + now.minute
