@@ -297,10 +297,6 @@ async def get_payment_allowed(
         device: Lnurldevice, switch: LnurldeviceSwitch
     ) -> PaymentAllowed:
 
-async def get_payment_allowed(
-        device: Lnurldevice, switch: LnurldeviceSwitch
-    ) -> PaymentAllowed:
-
     if switch.quantity is not None and switch.quantity <= 0:
         return PaymentAllowed.CLOSED
 
