@@ -4,7 +4,7 @@ from typing import List, Optional
 from enum import Enum
 
 from lnurl.types import LnurlPayMetadata
-from pydantic import BaseModel, Json
+from pydantic import BaseModel, Json, Field
 
 class PaymentAllowed(Enum):
     OPEN = 1
@@ -18,6 +18,7 @@ class LnurldeviceSwitch(BaseModel):
     gpio_duration: int = 2100
     lnurl: Optional[str]
     label: Optional[str]
+    quantity: Optional[int]
 
 class CreateLnurldevice(BaseModel):
     title: str
@@ -30,6 +31,8 @@ class CreateLnurldevice(BaseModel):
     closed_url: Optional[str]
     wait_url: Optional[str]
     switches: Optional[List[LnurldeviceSwitch]]
+    quantity: Optional[int] = Field(default=0, ge=0)
+    
 
 
 class Lnurldevice(BaseModel):
