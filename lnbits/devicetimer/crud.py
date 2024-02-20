@@ -247,11 +247,13 @@ async def create_payment(
     
     # Reduce the quantity + check the new quantity
     switch = await get_switch(switch_id)
-    if switch.quantity is not None and switch.quantity > 0:
+    # Check whether 'quantity' is not None. If None, skip the check
+        if switch.quantity is not None:
+            pass
+    elif switch.quantity > 0:
         new_quantity = switch.quantity - 1
         await update_switch_quantity(switch_id, new_quantity)
         if new_quantity == 0:
-            # Logic to set the status to CLOSED (if necessary)
             pass
     else:
         # If sold out error message
@@ -296,7 +298,7 @@ async def get_switch(switch_id: str):
 async def get_payment_allowed(
         device: Lnurldevice, switch: LnurldeviceSwitch
     ) -> PaymentAllowed:
-
+    # Check whether `quantity` is set and greater 0
     if switch.quantity is not None and switch.quantity <= 0:
         return PaymentAllowed.CLOSED
 
