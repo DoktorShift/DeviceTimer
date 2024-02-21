@@ -31,7 +31,6 @@ class CreateLnurldevice(BaseModel):
     closed_url: Optional[str]
     wait_url: Optional[str]
     switches: Optional[List[LnurldeviceSwitch]]
-    
 
 
 class Lnurldevice(BaseModel):
