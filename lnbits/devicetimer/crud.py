@@ -245,19 +245,19 @@ async def create_payment(
 ) -> LnurldevicePayment:
     payment_id = urlsafe_short_hash()
     
-    # Reduce the quantity + check the new quantity
     switch = await get_switch(switch_id)
+    
+    # Reduce the quantity + check the new quantity
     # Check whether 'quantity' is not None. If None, skip the check
-        if switch.quantity is not None:
-            pass
-    elif switch.quantity > 0:
-        new_quantity = switch.quantity - 1
-        await update_switch_quantity(switch_id, new_quantity)
-        if new_quantity == 0:
-            pass
-    else:
+    if switch.quantity is not None:
+        if switch.quantity > 0:
+            new_quantity = switch.quantity - 1
+            await update_switch_quantity(switch_id, new_quantity)
+            if new_quantity == 0:
+                pass
+       else:
         # If sold out error message
-        raise Exception("Product sold out")
+           raise Exception("Product sold out")
     
     await db.execute(
         """
@@ -275,7 +275,8 @@ async def create_payment(
     )
     
     payment = await get_payment(payment_id)
-    assert payment, "Couldnt retrieve newly created payment"
+    if not payment:
+        raise Exception("Could not retrieve newly created payment")
     return payment
 
 async def update_switch_quantity(switch_id: str, new_quantity: int):
