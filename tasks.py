@@ -1,11 +1,22 @@
 import asyncio
 
 from lnbits.core.models import Payment
-from lnbits.core.services import websocketUpdater
+
 from lnbits.helpers import get_current_extension_name
 from lnbits.tasks import register_invoice_listener
 
 from .crud import get_payment, update_payment, get_device
+
+from lnbits.extension_manager import version_parse
+from lnbits.settings import settings
+
+# from LNbits release 0.12.6 the websocketUpdater function was renamed to websocket_updater
+print(settings.version)
+print(version_parse(settings.version))
+if version_parse(settings.version) >= version_parse("0.12.6"):
+    from lnbits.core.services import websocket_updater
+else:
+    from lnbits.core.services import websocketUpdater as websocket_updater
 
 async def wait_for_paid_invoices():
     invoice_queue = asyncio.Queue()
@@ -45,7 +56,7 @@ async def on_invoice_paid(payment: Payment) -> None:
     if not switch:
         return
 
-    return await websocketUpdater(
+    return await websocket_updater(
         device_payment.deviceid,
         f"{switch.gpio_pin}-{switch.gpio_duration}"
     )
