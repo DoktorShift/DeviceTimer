@@ -1,6 +1,24 @@
 {
-    "name": "DeviceTimer",
-    "short_description": "For creating timed Lightning Feeders",    
-    "tile": "/devicetimer/static/image/devicetimer128.png",
-    "contributors": ["pieterjm"]
+  "id": "devicetimer",
+  "name": "DeviceTimer",
+  "short_description": "For creating timed Lightning Feeders",
+  "tile": "/devicetimer/static/image/devicetimer128.png",
+  "version": "1.0.0",
+  "min_lnbits_version": "1.4.0",
+  "contributors": [
+    {
+      "name": "pieterjm",
+      "uri": "https://github.com/pieterjm",
+      "role": "Creator"
+    },
+    {
+      "name": "DoktorShift",
+      "uri": "https://github.com/DoktorShift",
+      "role": "Lead Developer"
+    }
+  ],
+  "images": [],
+  "description_md": "https://raw.githubusercontent.com/DoktorShift/DeviceTimer/main/description.md",
+  "terms_and_conditions_md": "https://raw.githubusercontent.com/DoktorShift/DeviceTimer/main/toc.md",
+  "license": "MIT"
 }

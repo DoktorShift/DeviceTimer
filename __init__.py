@@ -1,39 +1,48 @@
 import asyncio
-from typing import List
 
 from fastapi import APIRouter
-from fastapi.staticfiles import StaticFiles
+from loguru import logger
 
-from lnbits.db import Database
-from lnbits.helpers import template_renderer
-from lnbits.tasks import catch_everything_and_restart
+from .crud import db
+from .tasks import wait_for_paid_invoices
+from .views import devicetimer_generic_router
+from .views_api import devicetimer_api_router
+from .lnurl import devicetimer_lnurl_router
 
-db = Database("ext_devicetimer")
-
-devicetimer_ext: APIRouter = APIRouter(prefix="/devicetimer", tags=["devicetimer"])
-
-scheduled_tasks: List[asyncio.Task] = []
+scheduled_tasks: list[asyncio.Task] = []
 
 devicetimer_static_files = [
     {
         "path": "/devicetimer/static",
-        "app": StaticFiles(directory="lnbits/extensions/devicetimer/static"),
         "name": "devicetimer_static",
     }
 ]
 
+devicetimer_ext: APIRouter = APIRouter(prefix="/devicetimer", tags=["devicetimer"])
+devicetimer_ext.include_router(devicetimer_generic_router)
+devicetimer_ext.include_router(devicetimer_api_router)
+devicetimer_ext.include_router(devicetimer_lnurl_router)
 
-def devicetimer_renderer():
-    return template_renderer(["lnbits/extensions/devicetimer/templates"])
 
-
-from .lnurl import *  # noqa: F401,F403
-from .tasks import wait_for_paid_invoices
-from .views import *  # noqa: F401,F403
-from .views_api import *  # noqa: F401,F403
+def devicetimer_stop():
+    for task in scheduled_tasks:
+        try:
+            task.cancel()
+        except Exception as ex:
+            logger.warning(ex)
 
 
 def devicetimer_start():
-    loop = asyncio.get_event_loop()
-    task = loop.create_task(catch_everything_and_restart(wait_for_paid_invoices))
+    from lnbits.tasks import create_permanent_unique_task
+
+    task = create_permanent_unique_task("ext_devicetimer", wait_for_paid_invoices)
     scheduled_tasks.append(task)
+
+
+__all__ = [
+    "db",
+    "devicetimer_ext",
+    "devicetimer_start",
+    "devicetimer_stop",
+    "devicetimer_static_files",
+]

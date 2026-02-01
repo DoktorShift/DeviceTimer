@@ -1,23 +1,23 @@
-import json
-from sqlite3 import Row
 from typing import List, Optional
 from enum import Enum
 
-from lnurl.types import LnurlPayMetadata
-from pydantic import BaseModel, Json
+from pydantic import BaseModel
+
 
 class PaymentAllowed(Enum):
     OPEN = 1
     CLOSED = 2
     WAIT = 3
 
+
 class LnurldeviceSwitch(BaseModel):
-    id: Optional[str]
+    id: Optional[str] = None
     amount: float = 0.0
     gpio_pin: int = 21
     gpio_duration: int = 2100
-    lnurl: Optional[str]
-    label: Optional[str]
+    lnurl: Optional[str] = None
+    label: Optional[str] = None
+
 
 class CreateLnurldevice(BaseModel):
     title: str
@@ -27,10 +27,10 @@ class CreateLnurldevice(BaseModel):
     available_stop: str
     timeout: int
     timezone: str
-    maxperday: Optional[int]
-    closed_url: Optional[str]
-    wait_url: Optional[str]
-    switches: Optional[List[LnurldeviceSwitch]]
+    maxperday: Optional[int] = None
+    closed_url: Optional[str] = None
+    wait_url: Optional[str] = None
+    switches: Optional[List[LnurldeviceSwitch]] = None
 
 
 class Lnurldevice(BaseModel):
@@ -39,19 +39,15 @@ class Lnurldevice(BaseModel):
     title: str
     wallet: str
     currency: str
-    switches: Optional[Json[List[LnurldeviceSwitch]]]
-    timestamp: str
+    switches: List[LnurldeviceSwitch] = []
+    timestamp: str = ""
     available_start: str
     available_stop: str
     timeout: int
     timezone: str
-    maxperday: Optional[int]
-    closed_url: Optional[str]
-    wait_url: Optional[str]
-
-    @classmethod
-    def from_row(cls, row: Row) -> "Lnurldevice":
-        return cls(**dict(row))
+    maxperday: Optional[int] = None
+    closed_url: Optional[str] = None
+    wait_url: Optional[str] = None
 
 class LnurldevicePayment(BaseModel):
     id: str
@@ -60,8 +56,4 @@ class LnurldevicePayment(BaseModel):
     payload: str
     switchid: str
     sats: int
-    timestamp: str
-
-    @classmethod
-    def from_row(cls, row: Row) -> "LnurldevicePayment":
-        return cls(**dict(row))
+    timestamp: str = ""
