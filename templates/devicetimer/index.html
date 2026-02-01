@@ -1,769 +1,785 @@
-]%`{% extends "base.html" %} {% from "macros.jinja" import window_vars with context
-%} {% block page %}
+{% extends "base.html" %}
+{% from "macros.jinja" import window_vars with context %}
+
+{% block scripts %}
+{{ window_vars(user) }}
+<script src="{{ static_url_for('devicetimer/static', path='js/index.js') }}"></script>
+{% endblock %}
+
+{% block styles %}
+<style>
+    /* Cards */
+    .stat-card {
+        border-radius: 8px;
+    }
+
+    .avatar_style {
+        border-radius: 8px;
+    }
+
+    .custom_border {
+        border: 1px solid rgba(128, 128, 128, 0.15) !important;
+    }
+
+    .custom_select .q-field__control {
+        border-radius: 8px !important;
+    }
+
+    /* Table */
+    .table-border-soft .q-table__bottom,
+    .table-border-soft td,
+    .table-border-soft th,
+    .table-border-soft thead,
+    .table-border-soft tr {
+        border-color: rgba(128, 128, 128, 0.15) !important;
+    }
+
+    .table-border-soft th {
+        font-weight: 500;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    /* Dialog */
+    .dialog_style {
+        border-radius: 12px;
+    }
+
+    /* Info Box */
+    .info-box .q-expansion-item {
+        border-top: 1px solid rgba(128, 128, 128, 0.12);
+    }
+
+    .info-box .q-expansion-item:first-of-type {
+        border-top: none;
+    }
+
+    /* Form Sections */
+    .form-section {
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.12);
+    }
+
+    .form-section:first-of-type {
+        padding-top: 0;
+    }
+
+    .form-section:last-of-type {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .form-section__title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.6;
+        margin-bottom: 12px;
+    }
+
+    /* Switch Card */
+    .switch-card {
+        background: rgba(128, 128, 128, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+        border: 1px solid rgba(128, 128, 128, 0.1);
+    }
+
+    .switch-card:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Stat Card Item */
+    .stat-item {
+        padding: 12px 16px;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        opacity: 0.7;
+        margin-bottom: 2px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    /* Actions spacing */
+    .action-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    /* Empty state */
+    .empty-state {
+        padding: 48px 24px;
+    }
+
+    /* QR Code */
+    .qr-container {
+        padding: 16px;
+        background: white;
+        border-radius: 12px;
+        display: inline-block;
+    }
+
+    /* Info Banner */
+    .info-banner {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px 8px 0 0;
+    }
+</style>
+{% endblock %}
+
+{% block page %}
 <div class="row q-col-gutter-md">
-  <div class="col-12 col-md-7 q-gutter-y-md">
-    <q-card>
-      <q-card-section>
-        {% raw %}
-        <q-btn
-          unelevated
-          color="primary"
-          @click="formDialoglnurldevice.show = true"
-          >New device
-        </q-btn>
-      </q-card-section>
-    </q-card>
 
-    <q-card>
-      <q-card-section>
-        <div class="row items-center no-wrap q-mb-md">
-          <div class="col">
-            <h5 class="text-subtitle1 q-my-none">Devices</h5>
-          </div>
+    <!-- Main Content -->
+    <div class="col-12">
 
-          <div class="col-auto">
-            <q-input
-              borderless
-              dense
-              debounce="300"
-              v-model="filter"
-              placeholder="Search"
+        <!-- Wallet Selector + Actions -->
+        <div class="row items-center q-mb-md">
+            <div class="col-auto">
+                <q-select
+                    v-model="selectedWallet"
+                    :options="walletsWithCount"
+                    option-value="id"
+                    option-label="name"
+                    class="custom_select"
+                    emit-value
+                    map-options
+                    borderless
+                    dense
+                    filled
+                    style="min-width: 200px;"
+                    @update:model-value="onWalletChange"
+                >
+                    <template v-slot:prepend>
+                        <q-icon color="primary" size="20px">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                    <path d="M17 8V5a1 1 0 0 0-1-1H6a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V6"/>
+                                    <path d="M20 12v4h-4a2 2 0 0 1 0-4z"/>
+                                </g>
+                            </svg>
+                        </q-icon>
+                    </template>
+                    <template v-slot:option="scope">
+                        <q-item v-bind="scope.itemProps">
+                            <q-item-section>
+                                <q-item-label>{% raw %}{{ scope.opt.name }}{% endraw %}</q-item-label>
+                            </q-item-section>
+                            <q-item-section side v-if="scope.opt.deviceCount > 0">
+                                <q-badge color="primary" :label="scope.opt.deviceCount" />
+                            </q-item-section>
+                        </q-item>
+                    </template>
+                    <template v-slot:selected-item="scope">
+                        <div class="row items-center no-wrap">
+                            <span>{% raw %}{{ scope.opt.name }}{% endraw %}</span>
+                            <q-badge v-if="scope.opt.deviceCount > 0" color="primary" class="q-ml-sm" :label="scope.opt.deviceCount" />
+                        </div>
+                    </template>
+                </q-select>
+            </div>
+            <q-space></q-space>
+            <div class="col-auto">
+                <q-btn flat round size="sm" @click="drawerRight = true">
+                    <q-icon size="20px">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0m0-4h.01M12 16v-4"/>
+                        </svg>
+                    </q-icon>
+                    <q-tooltip>About</q-tooltip>
+                </q-btn>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row q-col-gutter-sm q-mb-md">
+            <div class="col-4">
+                <q-card class="stat-card custom_border" flat>
+                    <div class="row items-center stat-item">
+                        <div class="col">
+                            <div class="stat-label">Devices</div>
+                            <div class="stat-value">{% raw %}{{ stats.totalDevices }}{% endraw %}</div>
+                        </div>
+                        <div class="col-auto">
+                            <q-avatar size="36px" square class="bg-primary avatar_style text-white">
+                                <q-icon size="18px">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zm6 12h2"/>
+                                    </svg>
+                                </q-icon>
+                            </q-avatar>
+                        </div>
+                    </div>
+                </q-card>
+            </div>
+            <div class="col-4">
+                <q-card class="stat-card custom_border" flat>
+                    <div class="row items-center stat-item">
+                        <div class="col">
+                            <div class="stat-label">Switches</div>
+                            <div class="stat-value text-primary">{% raw %}{{ stats.totalSwitches }}{% endraw %}</div>
+                        </div>
+                        <div class="col-auto">
+                            <q-avatar size="36px" square class="bg-primary avatar_style text-white">
+                                <q-icon size="18px">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M9 12l2 2l4-4M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                    </svg>
+                                </q-icon>
+                            </q-avatar>
+                        </div>
+                    </div>
+                </q-card>
+            </div>
+            <div class="col-4">
+                <q-card class="stat-card custom_border" flat>
+                    <div class="row items-center stat-item">
+                        <div class="col">
+                            <div class="stat-label">Active</div>
+                            <div class="stat-value text-positive">{% raw %}{{ stats.activeDevices }}{% endraw %}</div>
+                        </div>
+                        <div class="col-auto">
+                            <q-avatar size="36px" square class="bg-positive avatar_style text-white">
+                                <q-icon size="18px">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M9 12l2 2l4-4"/>
+                                    </svg>
+                                </q-icon>
+                            </q-avatar>
+                        </div>
+                    </div>
+                </q-card>
+            </div>
+        </div>
+
+        <!-- Devices Card -->
+        <q-card class="stat-card custom_border" flat>
+            <!-- Header -->
+            <div class="row items-center q-px-md q-pt-md q-pb-sm">
+                <div class="col">
+                    <div class="text-subtitle1 text-weight-medium">Timed Devices</div>
+                    <div class="text-caption text-grey">Manage your bitcoinSwitch devices</div>
+                </div>
+                <div class="col-auto row items-center q-gutter-x-sm">
+                    <q-input
+                        v-model="filter"
+                        borderless
+                        dense
+                        debounce="300"
+                        placeholder="Search..."
+                        style="width: 140px;"
+                    >
+                        <template v-slot:append>
+                            <q-icon name="search" size="18px"></q-icon>
+                        </template>
+                    </q-input>
+                    <q-btn flat round size="sm" @click="exportCSV">
+                        <q-icon size="18px">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                                <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2M12 11v6m-3-3l3 3l3-3"/>
+                            </svg>
+                        </q-icon>
+                        <q-tooltip>Export CSV</q-tooltip>
+                    </q-btn>
+                    <q-btn unelevated color="primary" size="sm" class="avatar_style" @click="openDeviceDialog()" no-caps>
+                        <q-icon name="add" size="18px" class="q-mr-xs"></q-icon>
+                        New Device
+                    </q-btn>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-if="!loading && devices.length === 0" class="empty-state text-center">
+                <q-icon size="56px" color="grey-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24">
+                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zm6 12h2"/>
+                    </svg>
+                </q-icon>
+                <div class="text-subtitle1 q-mt-md q-mb-xs">No devices yet</div>
+                <div class="text-body2 text-grey q-mb-lg">Create your first timed device to start accepting Lightning payments</div>
+                <q-btn unelevated color="primary" class="avatar_style" @click="openDeviceDialog()" no-caps>
+                    <q-icon name="add" size="18px" class="q-mr-xs"></q-icon>
+                    Create Device
+                </q-btn>
+            </div>
+
+            <!-- Devices Table -->
+            <q-table
+                v-else
+                flat
+                :rows="filteredDevices"
+                :columns="deviceColumns"
+                row-key="id"
+                :loading="loading"
+                class="table-border-soft"
+                :pagination="{rowsPerPage: 10}"
+                hide-bottom
             >
-              <template v-slot:append>
-                <q-icon name="search"></q-icon>
-              </template>
-            </q-input>
-            <q-btn flat color="grey" @click="exportlnurldeviceCSV"
-              >Export to CSV</q-btn
-            >
-          </div>
+                <template v-slot:body-cell-hours="props">
+                    <q-td :props="props">
+                        <q-badge color="blue-grey-7" class="q-px-sm q-py-xs">
+                            {% raw %}{{ formatHours(props.row) }}{% endraw %}
+                        </q-badge>
+                    </q-td>
+                </template>
+
+                <template v-slot:body-cell-switches="props">
+                    <q-td :props="props">
+                        <q-badge color="primary" class="q-px-sm q-py-xs">
+                            {% raw %}{{ props.row.switches?.length || 0 }}{% endraw %}
+                        </q-badge>
+                    </q-td>
+                </template>
+
+                <template v-slot:body-cell-actions="props">
+                    <q-td :props="props" class="q-gutter-x-xs">
+                        <q-btn
+                            flat
+                            dense
+                            round
+                            size="sm"
+                            color="grey-7"
+                            @click="openQrCodeDialog(props.row)"
+                            :disable="protocol === 'http:' || !props.row.switches?.length"
+                        >
+                            <q-icon size="18px">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M4 4m0 1a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zm10 0m0 1a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1zm-10 10m0 1a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM17 14v3m0 3v.01M14 17h3"/>
+                                </svg>
+                            </q-icon>
+                            <q-tooltip v-if="protocol === 'http:'">LNURLs require HTTPS</q-tooltip>
+                            <q-tooltip v-else-if="!props.row.switches?.length">No switches configured</q-tooltip>
+                            <q-tooltip v-else>View QR Codes</q-tooltip>
+                        </q-btn>
+
+                        <q-btn flat dense round size="sm" color="grey-7" @click="copyWebsocketUrl(props.row.id)">
+                            <q-icon size="18px">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                        <path d="M7 9.667A2.667 2.667 0 0 1 9.667 7h8.666A2.667 2.667 0 0 1 21 9.667v8.666A2.667 2.667 0 0 1 18.333 21H9.667A2.667 2.667 0 0 1 7 18.333z"/>
+                                        <path d="M4.012 16.737A2 2 0 0 1 3 15V5c0-1.1.9-2 2-2h10c.75 0 1.158.385 1.5 1"/>
+                                    </g>
+                                </svg>
+                            </q-icon>
+                            <q-tooltip>Copy WebSocket URL</q-tooltip>
+                        </q-btn>
+
+                        <q-btn flat dense round size="sm" color="grey-7" @click="openDeviceDialog(props.row)">
+                            <q-icon size="18px">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                        <path d="M7 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1"/>
+                                        <path d="M20.385 6.585a2.1 2.1 0 0 0-2.97-2.97L9 12v3h3zM16 5l3 3"/>
+                                    </g>
+                                </svg>
+                            </q-icon>
+                            <q-tooltip>Edit</q-tooltip>
+                        </q-btn>
+
+                        <q-btn flat dense round size="sm" color="red-7" @click="deleteDevice(props.row.id)">
+                            <q-icon size="18px">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+                                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M4 7h16m-10 4v6m4-6v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+                                </svg>
+                            </q-icon>
+                            <q-tooltip>Delete</q-tooltip>
+                        </q-btn>
+                    </q-td>
+                </template>
+            </q-table>
+        </q-card>
+    </div>
+
+    <!-- Info Drawer -->
+    <q-drawer v-model="drawerRight" side="right" bordered overlay :width="320">
+        <div class="q-pa-md">
+            <div class="row items-center q-mb-lg">
+                <div class="col text-h6">About</div>
+                <div class="col-auto">
+                    <q-btn flat round dense size="sm" @click="drawerRight = false">
+                        <q-icon name="close" size="18px"></q-icon>
+                    </q-btn>
+                </div>
+            </div>
+
+            <q-card class="info-box custom_border" flat>
+                <img
+                    src="{{ static_url_for('devicetimer/static', path='image/DeviceTimer_Banner.png') }}"
+                    class="info-banner"
+                >
+                <q-card-section class="q-pb-sm">
+                    <div class="text-subtitle1 text-weight-medium q-mb-xs">DeviceTimer</div>
+                    <div class="text-body2 text-grey-7">
+                        Bring your physical devices to life with Bitcoin Lightning payments. DeviceTimer extends the bitcoinSwitch ecosystem by adding powerful time-based controls - set operating hours, enforce cooldown periods between triggers, and limit daily usage. Ideal for animal feeders, arcade machines, vending machines, donation boxes, or any IoT device you want to monetize.
+                    </div>
+                </q-card-section>
+
+                <q-expansion-item dense label="Features" header-class="text-body2">
+                    <q-card-section class="q-pt-none q-pb-sm">
+                        <q-list dense class="q-ml-sm">
+                            <q-item dense class="q-px-none q-py-xs" style="min-height: 28px;">
+                                <q-item-section avatar style="min-width: 28px;">
+                                    <q-icon name="schedule" size="14px" color="grey-6"></q-icon>
+                                </q-item-section>
+                                <q-item-section>
+                                    <q-item-label class="text-caption">Operating hours control</q-item-label>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense class="q-px-none q-py-xs" style="min-height: 28px;">
+                                <q-item-section avatar style="min-width: 28px;">
+                                    <q-icon name="timer" size="14px" color="grey-6"></q-icon>
+                                </q-item-section>
+                                <q-item-section>
+                                    <q-item-label class="text-caption">Timeout between triggers</q-item-label>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense class="q-px-none q-py-xs" style="min-height: 28px;">
+                                <q-item-section avatar style="min-width: 28px;">
+                                    <q-icon name="today" size="14px" color="grey-6"></q-icon>
+                                </q-item-section>
+                                <q-item-section>
+                                    <q-item-label class="text-caption">Daily trigger limits</q-item-label>
+                                </q-item-section>
+                            </q-item>
+                            <q-item dense class="q-px-none q-py-xs" style="min-height: 28px;">
+                                <q-item-section avatar style="min-width: 28px;">
+                                    <q-icon name="image" size="14px" color="grey-6"></q-icon>
+                                </q-item-section>
+                                <q-item-section>
+                                    <q-item-label class="text-caption">Custom status images</q-item-label>
+                                </q-item-section>
+                            </q-item>
+                        </q-list>
+                    </q-card-section>
+                </q-expansion-item>
+
+                <q-expansion-item dense label="Links" header-class="text-body2">
+                    <q-card-section class="q-pt-none q-pb-sm">
+                        <q-btn outline color="primary" size="sm" class="full-width q-mb-sm avatar_style" no-caps @click="openDocumentation()">
+                            <q-icon name="description" size="16px" class="q-mr-sm"></q-icon>
+                            Documentation
+                        </q-btn>
+                        <q-btn outline color="grey-7" size="sm" class="full-width avatar_style" no-caps href="http://devicetimer.bitcoinswitch.de/" target="_blank">
+                            <q-icon name="favorite" size="16px" class="q-mr-sm"></q-icon>
+                            Donate
+                        </q-btn>
+                    </q-card-section>
+                </q-expansion-item>
+
+                <q-expansion-item dense label="Credits" header-class="text-body2">
+                    <q-card-section class="q-pt-none text-caption text-grey-7">
+                        <p class="q-mb-sm">Created by <a href="https://github.com/pieterjm" target="_blank">Pieterjm</a> & <a href="https://business-bitcoin.de" target="_blank">Business-Bitcoin</a></p>
+                        <p class="q-mb-none">Forked from LNURLDevice by <a href="https://github.com/arcbtc" target="_blank">Ben Arc</a>, <a href="https://github.com/blackcoffeexbt" target="_blank">BlackCoffee</a>, <a href="https://github.com/motorina0" target="_blank">motorina0</a>, <a href="https://github.com/dni" target="_blank">dni</a></p>
+                    </q-card-section>
+                </q-expansion-item>
+            </q-card>
         </div>
-        <q-table
-          flat
-          dense
-          :data="lnurldeviceLinks"
-          row-key="id"
-          :columns="lnurldevicesTable.columns"
-          :pagination.sync="lnurldevicesTable.pagination"
-          :filter="filter"
-        >
-          <template v-slot:header="props">
-            <q-tr :props="props">
-              <q-th style="width: 5%"></q-th>
-              <q-th style="width: 5%"></q-th>
-              <q-th style="width: 5%"></q-th>
-              <q-th style="width: 5%"></q-th>
+    </q-drawer>
 
-              <q-th
-                v-for="col in props.cols"
-                :key="col.name"
-                :props="props"
-                auto-width
-              >
-                <div v-if="col.name == 'id'"></div>
-                <div v-else>{{ col.label }}</div>
-              </q-th>
-              <!-- <q-th auto-width></q-th> -->
-            </q-tr>
-          </template>
+    <!-- Device Dialog -->
+    <q-dialog v-model="deviceDialog.show" persistent>
+        <q-card class="dialog_style" style="width: 520px; max-width: 95vw;">
+            <q-card-section class="q-pb-none">
+                <div class="text-h6">{% raw %}{{ deviceDialog.isEdit ? 'Edit Device' : 'New Device' }}{% endraw %}</div>
+            </q-card-section>
 
-          <template v-slot:body="props">
-            <q-tr :props="props">
-              <q-td>
-                <q-btn
-                  flat
-                  dense
-                  size="xs"
-                  @click="openUpdatelnurldeviceLink(props.row.id)"
-                  icon="edit"
-                  color="blue"
+            <q-card-section class="q-pt-md">
+                <q-form @submit="submitDeviceForm">
+                    <!-- Basic Info -->
+                    <div class="form-section">
+                        <div class="form-section__title">Basic Information</div>
+                        <q-input
+                            v-model="deviceDialog.data.title"
+                            filled
+                            dense
+                            label="Device Name *"
+                            :rules="[val => !!val || 'Required']"
+                            class="q-mb-sm"
+                        ></q-input>
+
+                        <q-select
+                            v-model="deviceDialog.data.wallet"
+                            :options="g.user.wallets"
+                            option-value="id"
+                            option-label="name"
+                            emit-value
+                            map-options
+                            filled
+                            dense
+                            label="Wallet *"
+                            class="q-mb-sm"
+                        ></q-select>
+
+                        <div class="row q-col-gutter-sm">
+                            <div class="col-6">
+                                <q-select
+                                    v-model="deviceDialog.data.currency"
+                                    :options="currencies"
+                                    filled
+                                    dense
+                                    label="Currency"
+                                ></q-select>
+                            </div>
+                            <div class="col-6">
+                                <q-select
+                                    v-model="deviceDialog.data.timezone"
+                                    :options="timezones"
+                                    filled
+                                    dense
+                                    label="Timezone"
+                                    use-input
+                                    input-debounce="300"
+                                    @filter="(val, update) => update(() => {})"
+                                ></q-select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Schedule -->
+                    <div class="form-section">
+                        <div class="form-section__title">Operating Schedule</div>
+                        <div class="row q-col-gutter-sm q-mb-sm">
+                            <div class="col-6">
+                                <q-input
+                                    v-model="deviceDialog.data.available_start"
+                                    filled
+                                    dense
+                                    label="Opening Time"
+                                    mask="##:##"
+                                    hint="HH:MM"
+                                ></q-input>
+                            </div>
+                            <div class="col-6">
+                                <q-input
+                                    v-model="deviceDialog.data.available_stop"
+                                    filled
+                                    dense
+                                    label="Closing Time"
+                                    mask="##:##"
+                                    hint="HH:MM"
+                                ></q-input>
+                            </div>
+                        </div>
+                        <div class="row q-col-gutter-sm">
+                            <div class="col-6">
+                                <q-input
+                                    v-model.number="deviceDialog.data.timeout"
+                                    type="number"
+                                    filled
+                                    dense
+                                    label="Timeout (sec)"
+                                    hint="Cooldown"
+                                ></q-input>
+                            </div>
+                            <div class="col-6">
+                                <q-input
+                                    v-model.number="deviceDialog.data.maxperday"
+                                    type="number"
+                                    filled
+                                    dense
+                                    label="Max/Day"
+                                    hint="0 = unlimited"
+                                ></q-input>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Images -->
+                    <div class="form-section">
+                        <div class="form-section__title">Status Images</div>
+                        <q-input
+                            v-model="deviceDialog.data.closed_url"
+                            filled
+                            dense
+                            label="Closed Image URL"
+                            hint="Shown outside operating hours"
+                            class="q-mb-sm"
+                        ></q-input>
+                        <q-input
+                            v-model="deviceDialog.data.wait_url"
+                            filled
+                            dense
+                            label="Wait Image URL"
+                            hint="Shown during timeout"
+                        ></q-input>
+                    </div>
+
+                    <!-- Switches -->
+                    <div class="form-section">
+                        <div class="row items-center q-mb-sm">
+                            <div class="col form-section__title q-mb-none">Switches</div>
+                            <div class="col-auto">
+                                <q-btn round dense flat size="sm" color="primary" icon="add" @click="addSwitch">
+                                    <q-tooltip>Add Switch</q-tooltip>
+                                </q-btn>
+                            </div>
+                        </div>
+
+                        <div v-if="deviceDialog.data.switches.length === 0" class="text-center text-grey-6 q-py-md text-caption">
+                            No switches configured
+                        </div>
+
+                        <div v-for="(sw, index) in deviceDialog.data.switches" :key="index" class="switch-card">
+                            <div class="row items-center q-mb-sm">
+                                <div class="col text-caption text-weight-medium">Switch {% raw %}{{ index + 1 }}{% endraw %}</div>
+                                <div class="col-auto q-gutter-x-xs">
+                                    <!-- QR Code button - only for saved switches -->
+                                    <q-btn
+                                        v-if="sw.id && sw.lnurl"
+                                        flat
+                                        dense
+                                        round
+                                        size="sm"
+                                        @click="openSwitchQrCode(deviceDialog.data, sw)"
+                                        :disable="protocol === 'http:'"
+                                        class="q-pa-xs"
+                                    >
+                                        <img
+                                            src="{{ static_url_for('devicetimer/static', path='image/qrcode_icon.png') }}"
+                                            style="width: 24px; height: 24px;"
+                                        >
+                                        <q-tooltip>Show QR Code</q-tooltip>
+                                    </q-btn>
+                                    <!-- Copy LNURL button -->
+                                    <q-btn
+                                        v-if="sw.id && sw.lnurl"
+                                        flat
+                                        dense
+                                        round
+                                        size="xs"
+                                        color="grey-7"
+                                        @click="copyText(sw.lnurl, 'LNURL copied')"
+                                    >
+                                        <q-icon size="16px">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                                                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                                    <path d="M7 9.667A2.667 2.667 0 0 1 9.667 7h8.666A2.667 2.667 0 0 1 21 9.667v8.666A2.667 2.667 0 0 1 18.333 21H9.667A2.667 2.667 0 0 1 7 18.333z"/>
+                                                    <path d="M4.012 16.737A2 2 0 0 1 3 15V5c0-1.1.9-2 2-2h10c.75 0 1.158.385 1.5 1"/>
+                                                </g>
+                                            </svg>
+                                        </q-icon>
+                                        <q-tooltip>Copy LNURL</q-tooltip>
+                                    </q-btn>
+                                    <q-btn flat dense round size="xs" color="red-7" icon="close" @click="removeSwitch(index)">
+                                        <q-tooltip>Remove</q-tooltip>
+                                    </q-btn>
+                                </div>
+                            </div>
+                            <div class="row q-col-gutter-sm">
+                                <div class="col-6">
+                                    <q-input
+                                        v-model.number="sw.amount"
+                                        type="number"
+                                        filled
+                                        dense
+                                        :label="'Amount (' + deviceDialog.data.currency + ')'"
+                                    ></q-input>
+                                </div>
+                                <div class="col-6">
+                                    <q-input v-model="sw.label" filled dense label="Label"></q-input>
+                                </div>
+                                <div class="col-6">
+                                    <q-input v-model.number="sw.gpio_pin" type="number" filled dense label="GPIO Pin"></q-input>
+                                </div>
+                                <div class="col-6">
+                                    <q-input v-model.number="sw.gpio_duration" type="number" filled dense label="Duration (ms)"></q-input>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="row items-center q-mt-lg q-pt-sm">
+                        <q-btn
+                            unelevated
+                            color="primary"
+                            type="submit"
+                            :label="deviceDialog.isEdit ? 'Update' : 'Create'"
+                            :disable="!deviceDialog.data.title"
+                            class="avatar_style"
+                            no-caps
+                        ></q-btn>
+                        <q-space></q-space>
+                        <q-btn flat color="grey-7" @click="deviceDialog.show = false" no-caps>Cancel</q-btn>
+                    </div>
+                </q-form>
+            </q-card-section>
+        </q-card>
+    </q-dialog>
+
+    <!-- QR Code Dialog -->
+    <q-dialog v-model="qrCodeDialog.show">
+        <q-card v-if="qrCodeDialog.data" class="dialog_style" style="width: 380px; max-width: 95vw;">
+            <q-card-section class="q-pb-sm">
+                <div class="text-h6">{% raw %}{{ qrCodeDialog.data.title }}{% endraw %}</div>
+                <div class="text-caption text-grey">Scan with a Lightning wallet</div>
+            </q-card-section>
+
+            <q-card-section class="q-pt-sm text-center">
+                <div class="qr-container">
+                    <img :src="qrcodeUrl" style="width: 220px; height: 220px; display: block;">
+                </div>
+
+                <q-chip
+                    :color="websocketMessage.includes('connected') ? 'positive' : 'grey-6'"
+                    text-color="white"
+                    size="sm"
+                    class="q-mt-md"
                 >
-                  <q-tooltip>Edit Device</q-tooltip>
+                    <q-icon :name="websocketMessage.includes('connected') ? 'check_circle' : 'info'" size="14px" class="q-mr-xs"></q-icon>
+                    {% raw %}{{ wsMessage }}{% endraw %}
+                </q-chip>
+            </q-card-section>
+
+            <q-card-section v-if="qrCodeDialog.data.switches.length > 1" class="q-pt-none">
+                <div class="text-caption text-grey q-mb-xs">Switch:</div>
+                <div class="row q-gutter-xs">
+                    <q-btn
+                        v-for="sw in qrCodeDialog.data.switches"
+                        :key="sw.id"
+                        :outline="qrCodeDialog.selectedSwitch?.id !== sw.id"
+                        :unelevated="qrCodeDialog.selectedSwitch?.id === sw.id"
+                        color="primary"
+                        size="sm"
+                        :label="sw.label || 'Switch'"
+                        @click="selectSwitch(sw)"
+                        class="avatar_style"
+                        no-caps
+                    ></q-btn>
+                </div>
+            </q-card-section>
+
+            <q-card-actions class="q-px-md q-pb-md">
+                <q-btn flat size="sm" color="grey-7" @click="copyText(lnurlValue, 'LNURL copied!')" no-caps>
+                    <q-icon name="content_copy" size="16px" class="q-mr-xs"></q-icon>
+                    Copy LNURL
                 </q-btn>
-              </q-td>
-              <q-td>
-                <q-btn
-                  flat
-                  dense
-                  size="xs"
-                  @click="deletelnurldeviceLink(props.row.id)"
-                  icon="cancel"
-                  color="pink"
-                >
-                  <q-tooltip> Delete Device </q-tooltip>
-                </q-btn>
-              </q-td>
-              <q-td>
-                <q-btn
-                  flat
-                  dense
-                  size="xs"
-                  @click="openlnurldeviceSettings(props.row.id)"
-                  icon="perm_data_setting"
-                  color="primary"
-                >
-                  <q-tooltip> LNURLDevice Settings </q-tooltip>
-                </q-btn>
-              </q-td>
-              <q-td>
-                <q-btn
-                  :disable="protocol == 'http:'"
-                  flat
-                  dense
-                  size="xs"
-                  icon="visibility"
-                  :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
-                  @click="openQrCodeDialog(props.row.id)"
-                  ><q-tooltip v-if="protocol == 'http:'">
-                    LNURLs only work over HTTPS </q-tooltip
-                  ><q-tooltip v-else> view LNURLS </q-tooltip></q-btn
-                >
-              </q-td>
-              <q-td
-                v-for="col in props.cols"
-                :key="col.name"
-                :props="props"
-                auto-width
-              >
-                <div v-if="col.name == 'id'"></div>
-                <div v-else>{{ col.value }}</div>
-              </q-td>
-            </q-tr>
-          </template>
-          {% endraw %}
-        </q-table>
-      </q-card-section>
-    </q-card>
-  </div>
+                <q-space></q-space>
+                <q-btn flat size="sm" color="grey-7" v-close-popup no-caps>Close</q-btn>
+            </q-card-actions>
+        </q-card>
+    </q-dialog>
 
-  <div class="col-12 col-md-5 q-gutter-y-md">
-    <q-card>
-      <q-card-section>
-        <h6 class="text-subtitle1 q-my-none">
-          {{SITE_TITLE}} Devicetimer Extension
-        </h6>
-      </q-card-section>
-      <q-separator></q-separator>
-      <q-card-section>
-          <P><p>Device Timer extension is compatible with bitcoinSwitch device for timed triggering.</p>
-
-<p>This extension allows you to let other feed animals, use machines, play games etc. in your regulated environment. Turn things on with bitcoin switch!</p>
-
-<ul>
-  <li> Payments available during specified time window. This allows creating a device (for instance, animal feeding) with opening hours so that it is only accessible during a specific time window.</li>
-  <li> Timeout after each payment. After each successful payment, the device is blocked for some time. This to prevent overfeeding or triggering when feeding is active.</li>
-  <li> When making a payment is not allowed, an alternative image is displayed instead of a QR code. The LNURL payment flow also returns an error when trying to make a payment outside opening hours.</li>
-</ul>
-
-<p>☯️Created by <a href="https://github.com/pieterjm">Pieterjm</a> and <a href="https://business-bitcoin.de">Business-Bitcoin</a> - Thanks Pieter.<br>
-☯️Forked from the <a href="https://github.com/pieterjm">LNURLDevice extension</a> which was created by <a href="https://github.com/arcbtc">Ben Arc</a>, <a href="https://github.com/blackcoffeexbt">BlackCoffee</a>, <a href="https://github.com/motorina0">motorina0</a>, <a href="https://github.com/dni">dni</a>.</p>
-
-
-<p>💻 If you like this extension and feel like you wanna donate, go ahead.<br>
-Your donation will fund contribution to this and future extensions. A shared part will also go to <a href="https://lnbits.com">LNBits</a> donation wallet.</p>
-
-<p><a href="http://devicetimer.bitcoinswitch.de/">Donation</a></p>
-      </q-card-section>
-    </q-card>
-  </div>
-
-  <q-dialog
-    v-model="settingsDialog.show"
-    deviceition="top"
-    @hide="closeFormDialog"
-  >
-    <q-card
-      style="width: 700px; max-width: 80vw"
-      class="q-pa-lg q-pt-xl lnbits__dialog-card"
-    >
-      <div class="text-h6">LNURLDevice device string</div>
-      <center>
-        <q-btn
-          dense
-          outline
-          unelevated
-          color="primary"
-          size="md"
-          @click="copyText(wslocation + '/api/v1/ws/' + settingsDialog.data.id, 'Link copied to clipboard!')"
-          >{% raw %}{{wslocation}}/api/v1/ws/{{settingsDialog.data.id}}{% endraw
-          %}<q-tooltip>Click to copy URL </q-tooltip>
-        </q-btn>
-      </center>
-      <div class="text-subtitle2">
-        <small> </small>
-      </div>
-    </q-card>
-  </q-dialog>
-
-  <q-dialog
-    v-model="formDialoglnurldevice.show"
-    deviceition="top"
-    @hide="closeFormDialog"
-  >
-    <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
-      <q-form @submit="sendFormDatalnurldevice" class="q-gutter-md">
-        <h5
-          v-html="formDialoglnurldevice.data.device"
-          v-if="formDialoglnurldevice.data.id"
-        ></h5>
-
-        <q-input
-          filled
-          dense
-          v-model.trim="formDialoglnurldevice.data.title"
-          type="text"
-          label="Title"
-        ></q-input>
-
-        <q-select
-          filled
-          dense
-          emit-value
-          v-model="formDialoglnurldevice.data.wallet"
-          :options="g.user.walletOptions"
-          label="Wallet *"
-        ></q-select>
-
-        <q-select
-          filled
-          dense
-          v-model.trim="formDialoglnurldevice.data.currency"
-          type="text"
-          label="Currency for device"
-          :options="currency"
-        ></q-select>
-
-	<q-select
-          filled
-          dense
-          v-model.trim="formDialoglnurldevice.data.timezone"
-          type="text"
-          label="Timezone for the device"
-          :options="timezone"
-        ></q-select>
-
-
-        <q-input
-        filled
-        dense
-        v-model="formDialoglnurldevice.data.available_start"
-        type="text"
-        mask="##:##"
-        label="Opening time (hh:mm)"
-        ></q-input>
-      
-        <q-input
-        filled
-        dense
-        v-model="formDialoglnurldevice.data.available_stop"
-        type="text"
-        mask="##:##"
-        label="Closing time (hh:mm)"
-      ></q-input>
-          
-      <q-input
-      filled
-      dense
-      v-model="formDialoglnurldevice.data.timeout"
-      type="number"
-      label="Timeout after triggering device"
-    ></q-input>
-
-      <q-input
-	filled
-	dense
-	v-model="formDialoglnurldevice.data.maxperday"
-	type="number"
-	label="Number of triggers per 24 hours"
-	></q-input>
-
-      
-      <q-input
-	filled
-	dense
-	v-model="formDialoglnurldevice.data.closed_url"
-	type="text"
-	label="Picture URL to display when the device is closed"
-	></q-input>
-      
-      <q-input
-	filled
-	dense
-	v-model="formDialoglnurldevice.data.wait_url"
-	type="text"
-	label="Picture URL to display when the device is in timeout"
-	></q-input>
-
-
-        <q-btn
-          class="q-mb-lg"
-          round
-          size="sm"
-          icon="add"
-          @click="addSwitch"
-          v-model="formDialoglnurldevice.data.switches"
-          color="primary"
-          ></q-btn>
-        <q-btn
-          class="q-mb-lg"
-          round
-          size="sm"
-          icon="remove"
-          @click="removeSwitch"
-          v-model="formDialoglnurldevice.data.switches"
-          color="primary"
-          ></q-btn>
-        <div v-for="_switch in formDialoglnurldevice.data.switches">
-          <div class="row">
-	    <div class="col">
-	      <A :href="'device/' + formDialoglnurldevice.data.id + '/' +  _switch.id + '/qrcode'"><IMG SRC="/devicetimer/static/image/qrcode_icon.png"></a>
-            </div>
-            <div class="col q-ml-mde">
-              <q-input
-                ref="setAmount"
-                filled
-                dense
-                v-model.trim="_switch.amount"
-                class="q-pb-md"
-                :label="'Amount (' + formDialoglnurldevice.data.currency + ') *'"
-                ></q-input>
-            </div>
-            <div class="col q-ml-md">
-              <q-input
-                filled
-                dense
-                v-model.trim="_switch.gpio_pin"
-                type="number"
-                label="GPIO pin"
-                ></q-input>
-            </div>
-            <div class="col q-ml-md">
-              <q-input
-                filled
-                dense
-                v-model.trim="_switch.gpio_duration"
-                type="number"
-                label="Duration (ms)"
-                ></q-input>
-            </div>
-            <div class="col q-ml-md">
-	      <q-input
-                filled
-                dense
-                v-model.trim="_switch.label"
-                type="text"
-                label="Label"
-                ></q-input>
-            </div>
-          </div>
-        </div>
-        <div class="row q-mt-lg">
-          <q-btn
-            v-if="formDialoglnurldevice.data.id"
-            unelevated
-            color="primary"
-            :disable="
-                formDialoglnurldevice.data.title == ''"
-            type="submit"
-            >Update device</q-btn
-          >
-          <q-btn
-            v-else
-            unelevated
-            color="primary"
-            :disable="
-                formDialoglnurldevice.data.title == ''"
-            type="submit"
-            >Create device</q-btn
-          >
-          <q-btn @click="cancellnurldevice" flat color="grey" class="q-ml-auto"
-            >Cancel</q-btn
-          >
-        </div>
-      </q-form>
-    </q-card>
-  </q-dialog>
-
-  <q-dialog v-model="qrCodeDialog.show" position="top">
-    <q-card v-if="qrCodeDialog.data" class="q-pa-lg lnbits__dialog-card">
-      <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
-        <img style="background-color: white;" :src="qrcode_url">
-      </q-responsive>
-      <q-btn
-        outline
-        color="grey"
-        @click="copyText(lnurlValue, 'LNURL copied to clipboard!')"
-        >Copy LNURL</q-btn
-      >
-      <q-chip
-        v-if="websocketMessage == 'WebSocket NOT supported by your Browser!' || websocketMessage == 'Connection closed'"
-        clickable
-        color="red"
-        text-color="white"
-        icon="error"
-        >{% raw %}{{ wsMessage }}{% endraw %}</q-chip
-      >
-      <q-chip v-else clickable color="green" text-color="white" icon="check"
-        >{% raw %}{{ wsMessage }}{% endraw %}</q-chip
-      >
-      <br />
-      <div class="row q-mt-lg q-gutter-sm">
-        <q-btn
-          v-for="_switch in qrCodeDialog.data.switches"
-          outline
-          color="primary"
-          :label="_switch.label"
-          @click="lnurlValue = _switch.lnurl; qrcode_url='/devicetimer/device/' + qrCodeDialog.data.id + '/' + _switch.id + '/qrcode?' + Math.random()"
-        ></q-btn>
-        <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
-      </div>
-    </q-card>
-  </q-dialog>
 </div>
-{% endblock %} {% block scripts %} {{ window_vars(user) }}
-
-<script>
-  Vue.component(VueQrcode.name, VueQrcode)
-
-  var maplnurldevice = obj => {
-    obj._data = _.clone(obj)
-    obj.theTime = obj.time * 60 - (Date.now() / 1000 - obj.timestamp)
-    obj.time = obj.time + 'mins'
-
-    if (obj.time_elapsed) {
-      obj.date = 'Time elapsed'
-    } else {
-      obj.date = Quasar.utils.date.formatDate(
-        new Date((obj.theTime - 3600) * 1000),
-        'HH:mm:ss'
-      )
-    }
-    return obj
-  }
-
-  new Vue({
-    el: '#vue',
-    mixins: [windowMixin],
-    data: function () {
-      return {
-        tab: 'mails',
-        protocol: window.location.protocol,
-        location: window.location.hostname,
-        wslocation: window.location.hostname,
-        filter: '',
-        currency: 'USD',
-	timezone: 'Europe/Amsterdam',
-        lnurlValue: '',
-        qrcode_url: '',
-        websocketMessage: '',
-        lnurldeviceLinks: [],
-        lnurldeviceLinksObj: [],
-        lnurldevicesTable: {
-          columns: [
-            {
-              name: 'title',
-              align: 'left',
-              label: 'title',
-              field: 'title'
-            },
-            {
-              name: 'theId',
-              align: 'left',
-              label: 'id',
-              field: 'id'
-            },
-            {
-              name: 'wallet',
-              align: 'left',
-              label: 'wallet',
-              field: 'wallet'
-            },
-            {
-              name: 'currency',
-              align: 'left',
-              label: 'currency',
-              field: 'currency'
-            }
-          ],
-          pagination: {
-            rowsPerPage: 10
-          }
-        },
-        passedlnurldevice: {},
-        settingsDialog: {
-          show: false,
-          data: {}
-        },
-        formDialog: {
-          show: false,
-          data: {}
-        },
-        formDialoglnurldevice: {
-          show: false,
-          data: {
-            switches: [],
-            lnurl_toggle: false,
-            show_message: false,
-            show_ack: false,
-            show_price: 'None',
-            amount: 1,
-            title: ''
-          }
-        },
-        qrCodeDialog: {
-          show: false,
-          data: null
-        }
-      }
-    },
-    computed: {
-      wsMessage: function () {
-        return this.websocketMessage
-      }
-    },
-    methods: {
-      openQrCodeDialog: function (lnurldevice_id) {
-        var lnurldevice = _.findWhere(this.lnurldeviceLinks, {
-          id: lnurldevice_id
-        })
-        this.qrCodeDialog.data = _.clone(lnurldevice)
-        this.qrCodeDialog.data.url =
-          window.location.protocol + '//' + window.location.host
-        this.lnurlValue = this.qrCodeDialog.data.switches[0].lnurl
-        this.qrcode_url='/devicetimer/device/' + this.qrCodeDialog.data.id + '/' + this.qrCodeDialog.data.switches[0].id + '/qrcode?' + Math.random()
-        this.websocketConnector(
-          'wss://' + window.location.host + '/api/v1/ws/' + lnurldevice_id
-        )
-        this.qrCodeDialog.show = true
-      },
-      addSwitch: function () {
-        if (!this.formDialoglnurldevice.data.switches) {
-          this.formDialoglnurldevice.data.switches = []
-        }
-        this.formDialoglnurldevice.data.switches.push({
-          amount: 10,
-          gpio_pin: 21,
-          gpio_duration: 2100
-        })
-      },
-      removeSwitch: function () {
-        this.formDialoglnurldevice.data.switches.pop()
-      },
-
-      cancellnurldevice: function (data) {
-        var self = this
-        self.formDialoglnurldevice.show = false
-        self.clearFormDialoglnurldevice()
-      },
-      closeFormDialog: function () {
-        this.clearFormDialoglnurldevice()
-        this.formDialog.data = {
-          is_unique: false
-        }
-      },
-      sendFormDatalnurldevice: function () {
-        var self = this
-        if (self.formDialoglnurldevice.data.id) {
-          this.updatelnurldevice(
-            self.g.user.wallets[0].adminkey,
-            self.formDialoglnurldevice.data
-          )
-        } else {
-          this.createlnurldevice(
-            self.g.user.wallets[0].adminkey,
-            self.formDialoglnurldevice.data
-          )
-        }
-      },
-
-      createlnurldevice: function (wallet, data) {
-        var self = this
-        var updatedData = {}
-        for (const property in data) {
-          if (data[property]) {
-            updatedData[property] = data[property]
-          }
-        }
-        LNbits.api
-          .request('POST', '/devicetimer/api/v1/device', wallet, updatedData)
-          .then(function (response) {
-            self.lnurldeviceLinks.push(maplnurldevice(response.data))
-            self.formDialoglnurldevice.show = false
-            self.clearFormDialoglnurldevice()
-          })
-          .catch(function (error) {
-            LNbits.utils.notifyApiError(error)
-          })
-      },
-      getlnurldevices: function () {
-        var self = this
-        LNbits.api
-          .request(
-            'GET',
-            '/devicetimer/api/v1/device',
-            self.g.user.wallets[0].adminkey
-          )
-          .then(function (response) {
-            if (response.data) {
-              self.lnurldeviceLinks = response.data.map(maplnurldevice)
-            }
-          })
-          .catch(function (error) {
-            LNbits.utils.notifyApiError(error)
-          })
-      },
-      getlnurldevice: function (lnurldevice_id) {
-        var self = this
-        LNbits.api
-          .request(
-            'GET',
-            '/devicetimer/api/v1/device/' + lnurldevice_id,
-            self.g.user.wallets[0].adminkey
-          )
-          .then(function (response) {
-            localStorage.setItem('lnurldevice', JSON.stringify(response.data))
-            localStorage.setItem('inkey', self.g.user.wallets[0].inkey)
-          })
-          .catch(function (error) {
-            LNbits.utils.notifyApiError(error)
-          })
-      },
-      deletelnurldeviceLink: function (lnurldeviceId) {
-        var self = this
-        var link = _.findWhere(this.lnurldeviceLinks, {id: lnurldeviceId})
-        LNbits.utils
-          .confirmDialog('Are you sure you want to delete this device?')
-          .onOk(function () {
-            LNbits.api
-              .request(
-                'DELETE',
-                '/devicetimer/api/v1/device/' + lnurldeviceId,
-                self.g.user.wallets[0].adminkey
-              )
-              .then(function (response) {
-                self.lnurldeviceLinks = _.reject(
-                  self.lnurldeviceLinks,
-                  function (obj) {
-                    return obj.id === lnurldeviceId
-                  }
-                )
-              })
-              .catch(function (error) {
-                LNbits.utils.notifyApiError(error)
-              })
-          })
-      },
-      openUpdatelnurldeviceLink: function (lnurldeviceId) {
-        var self = this
-        var lnurldevice = _.findWhere(this.lnurldeviceLinks, {
-          id: lnurldeviceId
-        })
-        self.formDialoglnurldevice.data = _.clone(lnurldevice._data)
-        self.formDialoglnurldevice.show = true
-      },
-      openlnurldeviceSettings: function (lnurldeviceId) {
-        var self = this
-        var lnurldevice = _.findWhere(this.lnurldeviceLinks, {
-          id: lnurldeviceId
-        })
-        self.settingsDialog.data = _.clone(lnurldevice._data)
-        self.settingsDialog.show = true
-      },
-      updatelnurldevice: function (wallet, data) {
-        var self = this
-        var updatedData = {}
-        for (const property in data) {
-          if (data[property]) {
-            updatedData[property] = data[property]
-          }
-        }
-
-        LNbits.api
-          .request(
-            'PUT',
-            '/devicetimer/api/v1/device/' + updatedData.id,
-            wallet,
-            updatedData
-          )
-          .then(function (response) {
-            self.lnurldeviceLinks = _.reject(
-              self.lnurldeviceLinks,
-              function (obj) {
-                return obj.id === updatedData.id
-              }
-            )
-            self.lnurldeviceLinks.push(maplnurldevice(response.data))
-            self.formDialoglnurldevice.show = false
-            self.clearFormDialoglnurldevice()
-          })
-          .catch(function (error) {
-            LNbits.utils.notifyApiError(error)
-          })
-      },
-      websocketConnector: function (websocketUrl) {
-        if ('WebSocket' in window) {
-          self = this
-          var ws = new WebSocket(websocketUrl)
-          self.updateWsMessage('Websocket connected')
-          ws.onmessage = function (evt) {
-            var received_msg = evt.data
-            self.updateWsMessage('Message recieved: ' + received_msg)
-          }
-          ws.onclose = function () {
-            self.updateWsMessage('Connection closed')
-          }
-        } else {
-          self.updateWsMessage('WebSocket NOT supported by your Browser!')
-        }
-      },
-      updateWsMessage: function (message) {
-        this.websocketMessage = message
-      },
-      clearFormDialoglnurldevice() {
-        this.formDialoglnurldevice.data = {
-          lnurl_toggle: false,
-          show_message: false,
-          show_ack: false,
-          show_price: 'None',
-          title: ''
-        }
-      },
-      exportlnurldeviceCSV: function () {
-        var self = this
-        LNbits.utils.exportCSV(
-          self.lnurldevicesTable.columns,
-          this.lnurldeviceLinks
-        )
-      }
-    },
-    created: function () {
-      var self = this
-      var getlnurldevices = this.getlnurldevices
-      getlnurldevices()
-      self.location = [
-        window.location.protocol,
-        '//',
-        window.location.host
-      ].join('')
-      self.wslocation = ['ws://', window.location.host].join('')
-      LNbits.api
-        .request('GET', '/api/v1/currencies')
-        .then(response => {
-          this.currency = ['sat', 'USD', ...response.data]
-        })
-        .catch(err => {
-          LNbits.utils.notifyApiError(err)
-        })
-	LNbits.api
-        .request('GET', '/devicetimer/api/v1/timezones')
-        .then(response => {
-          this.timezone = ['Europe/Amsterdam', ...response.data]
-        })
-        .catch(err => {
-          LNbits.utils.notifyApiError(err)
-        })
-	    
-    }
-  })
-</script>
 {% endblock %}
