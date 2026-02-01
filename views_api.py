@@ -4,6 +4,7 @@ import zoneinfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from loguru import logger
+from lnurl import encode as lnurl_encode
 
 from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
@@ -22,6 +23,20 @@ from .crud import (
     update_device,
 )
 from .models import CreateLnurldevice, Lnurldevice
+
+
+def fix_device_lnurls(device: Lnurldevice, req: Request) -> Lnurldevice:
+    """Ensure all switch LNURLs are properly bech32 encoded"""
+    if not device.switches:
+        return device
+
+    url = req.url_for("devicetimer.lnurl_v2_params", device_id=device.id)
+    for switch in device.switches:
+        if switch.lnurl and not switch.lnurl.upper().startswith("LNURL"):
+            # Re-encode if stored as raw URL
+            switch.lnurl = str(lnurl_encode(str(url) + "?switch_id=" + switch.id)).upper()
+
+    return device
 
 devicetimer_api_router = APIRouter()
 
@@ -112,7 +127,9 @@ async def api_lnurldevices_retrieve(
 ) -> list[Lnurldevice]:
     user = await get_user(wallet.wallet.user)
     assert user, "Lnurldevice cannot retrieve user"
-    return await get_devices(user.wallet_ids)
+    devices = await get_devices(user.wallet_ids)
+    # Ensure all LNURLs are properly encoded
+    return [fix_device_lnurls(d, req) for d in devices]
 
 
 @devicetimer_api_router.get(
@@ -128,7 +145,7 @@ async def api_lnurldevice_retrieve(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="lnurldevice does not exist"
         )
-    return device
+    return fix_device_lnurls(device, req)
 
 
 @devicetimer_api_router.delete(

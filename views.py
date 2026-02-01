@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse, Response
+from lnurl import encode as lnurl_encode
 
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
@@ -109,7 +110,14 @@ async def devicetimer_qrcode(request: Request, deviceid: str, switchid: str):
                 logger.error(f"Failed to retrieve wait image: {e}")
         return default_unavailable_image()
 
-    qr = pyqrcode.create(switch.lnurl)
+    # Ensure LNURL is properly encoded (bech32 format)
+    lnurl_value = switch.lnurl
+    if lnurl_value and not lnurl_value.upper().startswith("LNURL"):
+        # Re-encode if stored as raw URL
+        url = request.url_for("devicetimer.lnurl_v2_params", device_id=deviceid)
+        lnurl_value = str(lnurl_encode(str(url) + "?switch_id=" + switchid)).upper()
+
+    qr = pyqrcode.create(lnurl_value)
     stream = BytesIO()
     qr.svg(stream, scale=3)
     stream.seek(0)
