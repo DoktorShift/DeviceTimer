@@ -34,7 +34,7 @@ async def create_device(data: CreateLnurldevice, req: Request) -> Lnurldevice:
             )
 
     await db.execute(
-        "INSERT INTO devicetimer.device (id, key, title, wallet, currency, available_start, available_stop, timeout, timezone, closed_url, wait_url, maxperday, switches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO devicetimer.device (id, key, title, wallet, currency, available_start, available_stop, timeout, timezone, closed_url, wait_url, maxperday, switches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             device_id,
             device_key,
