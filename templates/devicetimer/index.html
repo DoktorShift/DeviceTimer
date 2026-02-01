@@ -182,11 +182,35 @@
     }
 
     /* Info Banner */
+    .info-banner-wrapper {
+        position: relative;
+        width: 100%;
+        height: 140px;
+        overflow: hidden;
+        border-radius: 8px 8px 0 0;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+
     .info-banner {
         width: 100%;
-        height: 120px;
+        height: 100%;
         object-fit: cover;
-        border-radius: 8px 8px 0 0;
+        object-position: center;
+        transition: transform 0.3s ease;
+    }
+
+    .info-banner-wrapper:hover .info-banner {
+        transform: scale(1.02);
+    }
+
+    .info-banner-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
+        pointer-events: none;
     }
 </style>
 {% endblock %}
@@ -245,11 +269,7 @@
             <q-space></q-space>
             <div class="col-auto">
                 <q-btn flat round size="sm" @click="drawerRight = true">
-                    <q-icon size="20px">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0m0-4h.01M12 16v-4"/>
-                        </svg>
-                    </q-icon>
+                    <q-icon name="info" size="20px" color="grey-7"></q-icon>
                     <q-tooltip>About</q-tooltip>
                 </q-btn>
             </div>
@@ -563,73 +583,147 @@
             </div>
 
             <q-card class="info-box custom_border" flat>
-                <img
-                    src="{{ static_url_for('devicetimer/static', path='image/DeviceTimer_Banner.png') }}"
-                    class="info-banner"
-                >
+                <div class="info-banner-wrapper">
+                    <img
+                        src="{{ static_url_for('devicetimer/static', path='image/DeviceTimer_Banner.png') }}"
+                        class="info-banner"
+                    >
+                    <div class="info-banner-overlay"></div>
+                </div>
+
+                <!-- Description -->
                 <q-card-section class="q-pb-sm">
-                    <div class="text-subtitle1 text-weight-medium q-mb-xs">DeviceTimer</div>
-                    <div class="text-body2 text-grey-7">
-                        Bring your physical devices to life with Bitcoin Lightning payments. DeviceTimer extends the bitcoinSwitch ecosystem by adding powerful time-based controls - set operating hours, enforce cooldown periods between triggers, and limit daily usage. Ideal for animal feeders, arcade machines, vending machines, donation boxes, or any IoT device you want to monetize.
-                    </div>
+                    <div class="text-subtitle1 text-weight-bold q-mb-sm">DeviceTimer</div>
+                    <p class="text-body2 text-grey-7 q-mb-sm" style="line-height: 1.5;">
+                        Bring your physical devices to life with Bitcoin Lightning payments.
+                    </p>
+                    <p class="text-caption text-grey-6 q-mb-none" style="line-height: 1.5;">
+                        DeviceTimer extends the bitcoinSwitch ecosystem with powerful time-based controls.
+                        Set operating hours, enforce cooldown periods, and limit daily usage.
+                        Perfect for animal feeders, arcade machines, vending machines, and any IoT device.
+                    </p>
                 </q-card-section>
 
-                <q-expansion-item dense label="Features" header-class="text-body2">
-                    <q-card-section class="q-pt-none q-pb-sm">
-                        <q-list dense class="q-ml-sm">
-                            <q-item dense class="q-px-none q-py-xs" style="min-height: 28px;">
-                                <q-item-section avatar style="min-width: 28px;">
-                                    <q-icon name="schedule" size="14px" color="grey-6"></q-icon>
-                                </q-item-section>
-                                <q-item-section>
-                                    <q-item-label class="text-caption">Operating hours control</q-item-label>
-                                </q-item-section>
-                            </q-item>
-                            <q-item dense class="q-px-none q-py-xs" style="min-height: 28px;">
-                                <q-item-section avatar style="min-width: 28px;">
-                                    <q-icon name="timer" size="14px" color="grey-6"></q-icon>
-                                </q-item-section>
-                                <q-item-section>
-                                    <q-item-label class="text-caption">Timeout between triggers</q-item-label>
-                                </q-item-section>
-                            </q-item>
-                            <q-item dense class="q-px-none q-py-xs" style="min-height: 28px;">
-                                <q-item-section avatar style="min-width: 28px;">
-                                    <q-icon name="today" size="14px" color="grey-6"></q-icon>
-                                </q-item-section>
-                                <q-item-section>
-                                    <q-item-label class="text-caption">Daily trigger limits</q-item-label>
-                                </q-item-section>
-                            </q-item>
-                            <q-item dense class="q-px-none q-py-xs" style="min-height: 28px;">
-                                <q-item-section avatar style="min-width: 28px;">
-                                    <q-icon name="image" size="14px" color="grey-6"></q-icon>
-                                </q-item-section>
-                                <q-item-section>
-                                    <q-item-label class="text-caption">Custom status images</q-item-label>
-                                </q-item-section>
-                            </q-item>
-                        </q-list>
+                <!-- Features -->
+                <q-expansion-item
+                    dense
+                    header-class="text-weight-medium"
+                    expand-icon-class="text-grey-6"
+                >
+                    <template v-slot:header>
+                        <q-item-section avatar style="min-width: 32px;">
+                            <q-icon name="stars" size="18px" color="primary"></q-icon>
+                        </q-item-section>
+                        <q-item-section class="text-body2">Features</q-item-section>
+                    </template>
+                    <q-card-section class="q-pt-none q-pb-md q-pl-lg">
+                        <div class="row q-col-gutter-y-sm">
+                            <div class="col-12 row items-center">
+                                <q-icon name="schedule" size="16px" color="grey-5" class="q-mr-sm"></q-icon>
+                                <span class="text-caption text-grey-8">Operating hours control</span>
+                            </div>
+                            <div class="col-12 row items-center">
+                                <q-icon name="timer" size="16px" color="grey-5" class="q-mr-sm"></q-icon>
+                                <span class="text-caption text-grey-8">Timeout between triggers</span>
+                            </div>
+                            <div class="col-12 row items-center">
+                                <q-icon name="event_repeat" size="16px" color="grey-5" class="q-mr-sm"></q-icon>
+                                <span class="text-caption text-grey-8">Daily trigger limits</span>
+                            </div>
+                            <div class="col-12 row items-center">
+                                <q-icon name="image" size="16px" color="grey-5" class="q-mr-sm"></q-icon>
+                                <span class="text-caption text-grey-8">Custom status images</span>
+                            </div>
+                        </div>
                     </q-card-section>
                 </q-expansion-item>
 
-                <q-expansion-item dense label="Links" header-class="text-body2">
-                    <q-card-section class="q-pt-none q-pb-sm">
-                        <q-btn outline color="primary" size="sm" class="full-width q-mb-sm avatar_style" no-caps @click="openDocumentation()">
-                            <q-icon name="description" size="16px" class="q-mr-sm"></q-icon>
-                            Documentation
-                        </q-btn>
-                        <q-btn outline color="grey-7" size="sm" class="full-width avatar_style" no-caps href="http://devicetimer.bitcoinswitch.de/" target="_blank">
-                            <q-icon name="favorite" size="16px" class="q-mr-sm"></q-icon>
-                            Donate
+                <!-- Resources -->
+                <q-expansion-item
+                    dense
+                    header-class="text-weight-medium"
+                    expand-icon-class="text-grey-6"
+                >
+                    <template v-slot:header>
+                        <q-item-section avatar style="min-width: 32px;">
+                            <q-icon name="link" size="18px" color="primary"></q-icon>
+                        </q-item-section>
+                        <q-item-section class="text-body2">Resources</q-item-section>
+                    </template>
+                    <q-card-section class="q-pt-none q-pb-md q-pl-lg">
+                        <q-btn
+                            outline
+                            color="primary"
+                            size="sm"
+                            class="full-width avatar_style"
+                            no-caps
+                            @click="openDocumentation()"
+                        >
+                            <q-icon name="menu_book" size="16px" class="q-mr-sm"></q-icon>
+                            Documentation & Setup Guide
                         </q-btn>
                     </q-card-section>
                 </q-expansion-item>
 
-                <q-expansion-item dense label="Credits" header-class="text-body2">
-                    <q-card-section class="q-pt-none text-caption text-grey-7">
-                        <p class="q-mb-sm">Created by <a href="https://github.com/pieterjm" target="_blank">Pieterjm</a> & <a href="https://business-bitcoin.de" target="_blank">Business-Bitcoin</a></p>
-                        <p class="q-mb-none">Forked from LNURLDevice by <a href="https://github.com/arcbtc" target="_blank">Ben Arc</a>, <a href="https://github.com/blackcoffeexbt" target="_blank">BlackCoffee</a>, <a href="https://github.com/motorina0" target="_blank">motorina0</a>, <a href="https://github.com/dni" target="_blank">dni</a></p>
+                <!-- Support -->
+                <q-expansion-item
+                    dense
+                    header-class="text-weight-medium"
+                    expand-icon-class="text-grey-6"
+                >
+                    <template v-slot:header>
+                        <q-item-section avatar style="min-width: 32px;">
+                            <q-icon name="favorite" size="18px" color="pink-5"></q-icon>
+                        </q-item-section>
+                        <q-item-section class="text-body2">Support Us</q-item-section>
+                    </template>
+                    <q-card-section class="q-pt-none q-pb-md q-pl-lg">
+                        <p class="text-caption text-grey-7 q-mb-sm" style="line-height: 1.5;">
+                            DeviceTimer is free and open source. Your donations help us maintain and improve the extension.
+                        </p>
+                        <q-btn
+                            unelevated
+                            color="pink-5"
+                            text-color="white"
+                            size="sm"
+                            class="full-width avatar_style"
+                            no-caps
+                            @click="openDonationDialog"
+                        >
+                            <q-icon name="bolt" size="16px" class="q-mr-sm"></q-icon>
+                            Donate via Lightning
+                        </q-btn>
+                    </q-card-section>
+                </q-expansion-item>
+
+                <!-- Credits -->
+                <q-expansion-item
+                    dense
+                    header-class="text-weight-medium"
+                    expand-icon-class="text-grey-6"
+                >
+                    <template v-slot:header>
+                        <q-item-section avatar style="min-width: 32px;">
+                            <q-icon name="people" size="18px" color="grey-6"></q-icon>
+                        </q-item-section>
+                        <q-item-section class="text-body2">Credits</q-item-section>
+                    </template>
+                    <q-card-section class="q-pt-none q-pb-md q-pl-lg">
+                        <div class="text-caption text-grey-7" style="line-height: 1.6;">
+                            <div class="q-mb-xs">
+                                <span class="text-weight-medium text-grey-8">Developed by</span><br>
+                                <a href="https://github.com/pieterjm" target="_blank" class="text-primary">Pieterjm</a>,
+                                <a href="https://github.com/DoktorShift" target="_blank" class="text-primary">DrShift</a> &
+                                <a href="https://business-bitcoin.de" target="_blank" class="text-primary">Business-Bitcoin</a>
+                            </div>
+                            <div>
+                                <span class="text-weight-medium text-grey-8">Based on LNURLDevice by</span><br>
+                                <a href="https://github.com/arcbtc" target="_blank" class="text-primary">Ben Arc</a>,
+                                <a href="https://github.com/blackcoffeexbt" target="_blank" class="text-primary">BlackCoffee</a>,
+                                <a href="https://github.com/motorina0" target="_blank" class="text-primary">motorina0</a>,
+                                <a href="https://github.com/dni" target="_blank" class="text-primary">dni</a>
+                            </div>
+                        </div>
                     </q-card-section>
                 </q-expansion-item>
             </q-card>
@@ -1055,6 +1149,93 @@
                 <q-space></q-space>
                 <q-btn flat color="grey-7" v-close-popup no-caps>Close</q-btn>
             </q-card-actions>
+        </q-card>
+    </q-dialog>
+
+    <!-- Donation Dialog -->
+    <q-dialog v-model="donationDialog.show">
+        <q-card class="dialog_style" style="width: 360px; max-width: 95vw;">
+            <!-- Header -->
+            <q-card-section class="q-pb-none text-center">
+                <q-btn flat round dense size="sm" v-close-popup class="absolute-top-right q-ma-sm">
+                    <q-icon name="close" size="18px" color="grey-6"></q-icon>
+                </q-btn>
+                <div class="text-h6 q-mb-xs">Support DeviceTimer</div>
+                <div class="text-caption text-grey">Open source powered by sats</div>
+            </q-card-section>
+
+            <!-- QR Code -->
+            <q-card-section class="text-center q-py-md">
+                <div class="qr-wrapper q-mx-auto" style="padding: 16px;">
+                    <img :src="getDonationQrUrl()" style="width: 160px; height: 160px; display: block;">
+                </div>
+                <div
+                    class="text-caption q-mt-sm q-px-md text-grey-6"
+                    style="font-family: monospace; font-size: 0.7rem; cursor: pointer;"
+                    @click="copyText(donationDialog.address, 'Copied!')"
+                >
+                    {% raw %}{{ donationDialog.address }}{% endraw %}
+                    <q-icon name="content_copy" size="12px" class="q-ml-xs"></q-icon>
+                </div>
+            </q-card-section>
+
+            <!-- Amount Selection -->
+            <q-card-section class="q-pt-none">
+                <!-- Tier Buttons -->
+                <div class="row q-col-gutter-xs q-mb-sm">
+                    <div class="col-3" v-for="tier in donationDialog.tiers" :key="tier.amount">
+                        <q-btn
+                            :outline="donationDialog.selectedTier?.amount !== tier.amount"
+                            :unelevated="donationDialog.selectedTier?.amount === tier.amount"
+                            :color="donationDialog.selectedTier?.amount === tier.amount ? 'primary' : 'grey-7'"
+                            dense
+                            no-caps
+                            class="full-width"
+                            style="border-radius: 6px; font-size: 0.75rem;"
+                            @click="selectDonationTier(tier)"
+                        >
+                            {% raw %}{{ formatSats(tier.amount) }}{% endraw %}
+                        </q-btn>
+                    </div>
+                </div>
+
+                <!-- Custom Input -->
+                <q-input
+                    v-model.number="donationDialog.customAmount"
+                    type="number"
+                    outlined
+                    dense
+                    placeholder="Custom amount"
+                    @focus="selectCustomAmount"
+                    class="q-mb-sm"
+                    style="font-size: 0.85rem;"
+                    :input-style="{ textAlign: 'center' }"
+                >
+                    <template v-slot:append>
+                        <span class="text-grey-6" style="font-size: 0.8rem;">sats</span>
+                    </template>
+                </q-input>
+
+                <!-- Description -->
+                <div
+                    v-if="donationDialog.selectedTier"
+                    class="text-center q-pa-sm"
+                    style="background: rgba(128,128,128,0.06); border-radius: 6px;"
+                >
+                    <q-icon :name="donationDialog.selectedTier.icon" size="16px" color="primary" class="q-mr-xs"></q-icon>
+                    <span class="text-caption text-grey-8">{% raw %}{{ donationDialog.selectedTier.label }}{% endraw %}</span>
+                    <div class="text-caption text-grey-6 q-mt-xs" style="font-size: 0.7rem;">
+                        {% raw %}{{ donationDialog.selectedTier.description }}{% endraw %}
+                    </div>
+                </div>
+            </q-card-section>
+
+            <!-- Footer -->
+            <q-card-section class="q-pt-none text-center">
+                <div class="text-caption text-grey-5" style="font-size: 0.65rem;">
+                    Scan QR or copy address • Thank you for supporting open source
+                </div>
+            </q-card-section>
         </q-card>
     </q-dialog>
 
