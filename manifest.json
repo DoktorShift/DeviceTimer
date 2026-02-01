@@ -3,7 +3,8 @@
     {
       "id": "devicetimer",
       "organisation": "DoktorShift",
-      "repository": "DeviceTimer"
+      "repository": "DeviceTimer",
+      "branch": "main"
     }
   ]
 }
