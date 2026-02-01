@@ -10,7 +10,7 @@ window.app = Vue.createApp({
   data() {
     return {
       loading: false,
-      selectedWallet: null,
+      selectedWallet: 'all',
       devices: [],
       filter: '',
       currencies: ['sat', 'EUR', 'USD', 'GBP', 'CHF', 'CAD', 'JPY', 'INR', 'ZAR', 'CZK'],
@@ -18,6 +18,8 @@ window.app = Vue.createApp({
       lnurlValue: '',
       qrcodeUrl: '',
       websocketMessage: '',
+      activeWebsocketDeviceId: null,
+      activeWebsocket: null,
       protocol: window.location.protocol,
       wsLocation: '',
 
@@ -28,6 +30,7 @@ window.app = Vue.createApp({
       },
 
       deviceColumns: [
+        {name: 'id', label: 'ID', field: 'id', align: 'left'},
         {name: 'title', label: 'Device', field: 'title', align: 'left', sortable: true},
         {name: 'currency', label: 'Currency', field: 'currency', align: 'left'},
         {name: 'timezone', label: 'Timezone', field: 'timezone', align: 'left'},
@@ -61,6 +64,19 @@ window.app = Vue.createApp({
         selectedSwitch: null
       },
 
+      websocketDialog: {
+        show: false,
+        url: '',
+        deviceTitle: ''
+      },
+
+      deleteDialog: {
+        show: false,
+        deviceId: null,
+        deviceTitle: '',
+        switchCount: 0
+      },
+
       drawerRight: false
     }
   },
@@ -70,30 +86,48 @@ window.app = Vue.createApp({
       return this.websocketMessage
     },
     filteredDevices() {
-      if (!this.filter) return this.devices
-      const search = this.filter.toLowerCase()
-      return this.devices.filter(d =>
-        d.title.toLowerCase().includes(search) ||
-        d.currency.toLowerCase().includes(search)
-      )
+      let devices = this.devices
+      // Filter by wallet if not "all"
+      if (this.selectedWallet && this.selectedWallet !== 'all') {
+        devices = devices.filter(d => d.wallet === this.selectedWallet)
+      }
+      // Filter by search term
+      if (this.filter) {
+        const search = this.filter.toLowerCase()
+        devices = devices.filter(d =>
+          d.title.toLowerCase().includes(search) ||
+          d.currency.toLowerCase().includes(search)
+        )
+      }
+      return devices
     },
     walletsWithCount() {
-      return this.g.user.wallets.map(w => ({
+      const wallets = this.g.user.wallets.map(w => ({
         ...w,
         deviceCount: this.devices.filter(d => d.wallet === w.id).length
       }))
+      return [
+        {id: 'all', name: 'All Wallets', deviceCount: this.devices.length},
+        ...wallets
+      ]
     }
   },
 
   methods: {
     onWalletChange() {
-      this.getDevices()
+      // Filtering is handled by filteredDevices computed property
+      this.calculateStats()
     },
 
     calculateStats() {
-      this.stats.totalDevices = this.devices.length
-      this.stats.activeDevices = this.devices.length
-      this.stats.totalSwitches = this.devices.reduce((sum, d) => sum + (d.switches?.length || 0), 0)
+      // Use filtered devices for stats when wallet is selected
+      let devices = this.devices
+      if (this.selectedWallet && this.selectedWallet !== 'all') {
+        devices = this.devices.filter(d => d.wallet === this.selectedWallet)
+      }
+      this.stats.totalDevices = devices.length
+      this.stats.activeDevices = devices.length
+      this.stats.totalSwitches = devices.reduce((sum, d) => sum + (d.switches?.length || 0), 0)
     },
 
     formatHours(device) {
@@ -103,11 +137,11 @@ window.app = Vue.createApp({
     async getDevices() {
       this.loading = true
       try {
-        const wallet = _.findWhere(this.g.user.wallets, {id: this.selectedWallet})
+        // Always fetch all devices using the first wallet's adminkey
         const response = await LNbits.api.request(
           'GET',
           '/devicetimer/api/v1/device',
-          wallet?.adminkey || this.g.user.wallets[0].adminkey
+          this.g.user.wallets[0].adminkey
         )
         if (response.data) {
           this.devices = response.data.map(mapDevice)
@@ -187,23 +221,30 @@ window.app = Vue.createApp({
 
     deleteDevice(deviceId) {
       const device = this.devices.find(d => d.id === deviceId)
-      LNbits.utils
-        .confirmDialog(`Delete "${device?.title}"?`)
-        .onOk(async () => {
-          try {
-            const wallet = _.findWhere(this.g.user.wallets, {id: device.wallet})
-            await LNbits.api.request(
-              'DELETE',
-              '/devicetimer/api/v1/device/' + deviceId,
-              wallet?.adminkey || this.g.user.wallets[0].adminkey
-            )
-            this.devices = this.devices.filter(d => d.id !== deviceId)
-            this.calculateStats()
-            this.$q.notify({type: 'positive', message: 'Device deleted'})
-          } catch (error) {
-            LNbits.utils.notifyApiError(error)
-          }
-        })
+      if (!device) return
+      this.deleteDialog.deviceId = deviceId
+      this.deleteDialog.deviceTitle = device.title
+      this.deleteDialog.switchCount = device.switches?.length || 0
+      this.deleteDialog.show = true
+    },
+
+    async confirmDeleteDevice() {
+      const deviceId = this.deleteDialog.deviceId
+      const device = this.devices.find(d => d.id === deviceId)
+      try {
+        const wallet = _.findWhere(this.g.user.wallets, {id: device?.wallet})
+        await LNbits.api.request(
+          'DELETE',
+          '/devicetimer/api/v1/device/' + deviceId,
+          wallet?.adminkey || this.g.user.wallets[0].adminkey
+        )
+        this.devices = this.devices.filter(d => d.id !== deviceId)
+        this.calculateStats()
+        this.deleteDialog.show = false
+        this.$q.notify({type: 'positive', message: 'Device deleted'})
+      } catch (error) {
+        LNbits.utils.notifyApiError(error)
+      }
     },
 
     openDeviceDialog(device = null) {
@@ -251,7 +292,7 @@ window.app = Vue.createApp({
       this.qrCodeDialog.selectedSwitch = device.switches[0]
       this.lnurlValue = device.switches[0].lnurl
       this.qrcodeUrl = '/devicetimer/device/' + device.id + '/' + device.switches[0].id + '/qrcode?' + Date.now()
-      this.websocketConnector(this.wsLocation + '/api/v1/ws/' + device.id)
+      this.websocketConnector(this.wsLocation + '/api/v1/ws/' + device.id, device.id)
       this.qrCodeDialog.show = true
     },
 
@@ -264,7 +305,7 @@ window.app = Vue.createApp({
       this.qrCodeDialog.selectedSwitch = sw
       this.lnurlValue = sw.lnurl
       this.qrcodeUrl = '/devicetimer/device/' + device.id + '/' + sw.id + '/qrcode?' + Date.now()
-      this.websocketConnector(this.wsLocation + '/api/v1/ws/' + device.id)
+      this.websocketConnector(this.wsLocation + '/api/v1/ws/' + device.id, device.id)
       this.qrCodeDialog.show = true
     },
 
@@ -290,14 +331,19 @@ window.app = Vue.createApp({
       this.deviceDialog.data.switches.splice(index, 1)
     },
 
-    websocketConnector(websocketUrl) {
+    websocketConnector(websocketUrl, deviceId) {
+      if (this.activeWebsocket) {
+        this.activeWebsocket.close()
+      }
       if (!('WebSocket' in window)) {
         this.websocketMessage = 'WebSocket not supported'
         return
       }
       try {
         this.websocketMessage = 'Connecting...'
+        this.activeWebsocketDeviceId = deviceId
         const ws = new WebSocket(websocketUrl)
+        this.activeWebsocket = ws
         ws.onopen = () => {
           this.websocketMessage = 'connected'
         }
@@ -306,12 +352,17 @@ window.app = Vue.createApp({
         }
         ws.onclose = () => {
           this.websocketMessage = 'Disconnected'
+          this.activeWebsocketDeviceId = null
+          this.activeWebsocket = null
         }
         ws.onerror = () => {
           this.websocketMessage = 'Connection error'
+          this.activeWebsocketDeviceId = null
+          this.activeWebsocket = null
         }
       } catch (e) {
         this.websocketMessage = 'WebSocket error'
+        this.activeWebsocketDeviceId = null
       }
     },
 
@@ -321,9 +372,10 @@ window.app = Vue.createApp({
       })
     },
 
-    copyWebsocketUrl(deviceId) {
-      const url = this.wsLocation + '/api/v1/ws/' + deviceId
-      this.copyText(url, 'WebSocket URL copied')
+    openWebsocketDialog(device) {
+      this.websocketDialog.url = this.wsLocation + '/api/v1/ws/' + device.id
+      this.websocketDialog.deviceTitle = device.title
+      this.websocketDialog.show = true
     },
 
     exportCSV() {
@@ -336,7 +388,7 @@ window.app = Vue.createApp({
   },
 
   async created() {
-    this.selectedWallet = this.g.user.wallets[0]?.id
+    this.selectedWallet = 'all'
     this.wsLocation = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host
 
     await this.getDevices()

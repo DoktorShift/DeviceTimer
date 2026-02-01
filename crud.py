@@ -34,9 +34,8 @@ async def create_device(data: CreateLnurldevice, req: Request) -> Lnurldevice:
         url = req.url_for("devicetimer.lnurl_v2_params", device_id=device_id)
         for _switch in data.switches:
             _switch.id = shortuuid.uuid()[:8]
-            _switch.lnurl = lnurl_encode(
-                str(url) + "?switch_id=" + str(_switch.id)
-            )
+            lnurl_obj = lnurl_encode(str(url) + "?switch_id=" + str(_switch.id))
+            _switch.lnurl = str(lnurl_obj).upper()
 
     switches_json = json.dumps(
         [s.dict() for s in data.switches] if data.switches else []
@@ -81,9 +80,12 @@ async def update_device(
         for _switch in data.switches:
             if _switch.id is None:
                 _switch.id = shortuuid.uuid()[:8]
-                _switch.lnurl = lnurl_encode(
-                    str(url) + "?switch_id=" + str(_switch.id)
-                )
+                lnurl_obj = lnurl_encode(str(url) + "?switch_id=" + str(_switch.id))
+                _switch.lnurl = str(lnurl_obj).upper()
+            elif not _switch.lnurl or not _switch.lnurl.upper().startswith("LNURL"):
+                # Re-encode if lnurl is missing or invalid
+                lnurl_obj = lnurl_encode(str(url) + "?switch_id=" + str(_switch.id))
+                _switch.lnurl = str(lnurl_obj).upper()
 
     switches_json = json.dumps(
         [s.dict() for s in data.switches] if data.switches else []
