@@ -109,23 +109,18 @@ async def lnurl_params(request: Request, device_id: str, switch_id: str):
 async def lnurl_callback(
     request: Request,
     paymentid: str,
-    pr: str = Query(None),
-    k1: str = Query(None),
+    amount: int = Query(..., description="Amount in millisatoshis"),
 ):
     payment = await get_payment(paymentid)
     if not payment:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="payment not found."
-        )
+        return {"status": "ERROR", "reason": "Payment not found."}
 
     if payment.payhash == "used":
         return {"status": "ERROR", "reason": "Payment already used."}
 
     device = await get_device(payment.deviceid)
     if not device:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="device not found."
-        )
+        return {"status": "ERROR", "reason": "Device not found."}
 
     switch = None
     for _switch in device.switches:
@@ -134,32 +129,37 @@ async def lnurl_callback(
             break
 
     if not switch:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="device switch not found."
+        return {"status": "ERROR", "reason": "Switch not found."}
+
+    # Validate amount matches expected
+    if amount != payment.sats:
+        return {"status": "ERROR", "reason": f"Amount mismatch. Expected {payment.sats} msats."}
+
+    try:
+        payment_hash, payment_request = await create_invoice(
+            wallet_id=device.wallet,
+            amount=int(amount / 1000),
+            memo=create_payment_memo(device, switch),
+            unhashed_description=json.dumps(
+                [["text/plain", create_payment_memo(device, switch)]]
+            ).encode(),
+            extra={
+                "tag": "DeviceTimer",
+                "Device": device.id,
+                "Switch": switch.id,
+                "amount": switch.amount,
+                "currency": device.currency,
+                "id": paymentid,
+                "received": False,
+                "fulfilled": False,
+            },
         )
 
-    payment_hash, payment_request = await create_invoice(
-        wallet_id=device.wallet,
-        amount=int(payment.sats / 1000),
-        memo=create_payment_memo(device, switch),
-        unhashed_description=json.dumps(
-            [["text/plain", create_payment_memo(device, switch)]]
-        ).encode(),
-        extra={
-            "tag": "DeviceTimer",
-            "Device": device.id,
-            "Switch": switch.id,
-            "amount": switch.amount,
-            "currency": device.currency,
-            "id": paymentid,
-            "received": False,
-            "fulfilled": False,
-        },
-    )
+        await update_payment(payment_id=paymentid, payhash=payment_hash)
 
-    await update_payment(payment_id=paymentid, payhash=payment_hash)
-
-    return {
-        "pr": payment_request,
-        "routes": [],
-    }
+        return {
+            "pr": payment_request,
+            "routes": [],
+        }
+    except Exception as e:
+        return {"status": "ERROR", "reason": str(e)}

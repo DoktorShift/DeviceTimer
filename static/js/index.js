@@ -79,6 +79,40 @@ window.app = Vue.createApp({
         switchCount: 0
       },
 
+      donationDialog: {
+        show: false,
+        address: 'u60311@blink.sv',
+        message: 'DeviceTimer extension donation',
+        selectedTier: null,
+        customAmount: null,
+        tiers: [
+          {
+            amount: 5000,
+            label: 'Coffee',
+            icon: 'local_cafe',
+            description: 'Buy us a coffee or sponsor us to keep us building new extensions'
+          },
+          {
+            amount: 50000,
+            label: 'Supporter',
+            icon: 'thumb_up',
+            description: 'Help cover server costs and testing hardware'
+          },
+          {
+            amount: 210000,
+            label: 'Believer',
+            icon: 'volunteer_activism',
+            description: 'Generous support for ongoing open source development'
+          },
+          {
+            amount: 1000000,
+            label: 'Sponsor',
+            icon: 'rocket_launch',
+            description: 'Fund the development of a brand new extension'
+          }
+        ]
+      },
+
       drawerRight: false
     }
   },
@@ -419,6 +453,49 @@ window.app = Vue.createApp({
 
     openDocumentation() {
       window.open('https://github.com/DoktorShift/DeviceTimer', '_blank')
+    },
+
+    openDonationDialog() {
+      this.donationDialog.selectedTier = this.donationDialog.tiers[0]
+      this.donationDialog.customAmount = null
+      this.donationDialog.show = true
+    },
+
+    selectDonationTier(tier) {
+      this.donationDialog.selectedTier = tier
+      this.donationDialog.customAmount = null
+    },
+
+    selectCustomAmount() {
+      this.donationDialog.selectedTier = null
+    },
+
+    getDonationAmount() {
+      if (this.donationDialog.selectedTier) {
+        return this.donationDialog.selectedTier.amount
+      }
+      return this.donationDialog.customAmount || 0
+    },
+
+    getDonationQrUrl() {
+      const amount = this.getDonationAmount()
+      const address = this.donationDialog.address
+      if (amount > 0) {
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' +
+          encodeURIComponent('lightning:' + address + '?amount=' + (amount * 1000))
+      }
+      return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' +
+        encodeURIComponent('lightning:' + address)
+    },
+
+    formatSats(amount) {
+      if (amount >= 1000000) {
+        return (amount / 1000000).toFixed(1).replace(/\.0$/, '') + 'M'
+      }
+      if (amount >= 1000) {
+        return (amount / 1000).toFixed(0) + 'k'
+      }
+      return amount.toString()
     },
 
     isDeviceLive(deviceId) {
