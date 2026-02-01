@@ -136,7 +136,7 @@ async def lnurl_callback(
         return {"status": "ERROR", "reason": f"Amount mismatch. Expected {payment.sats} msats."}
 
     try:
-        payment_hash, payment_request = await create_invoice(
+        invoice = await create_invoice(
             wallet_id=device.wallet,
             amount=int(amount / 1000),
             memo=create_payment_memo(device, switch),
@@ -155,10 +155,10 @@ async def lnurl_callback(
             },
         )
 
-        await update_payment(payment_id=paymentid, payhash=payment_hash)
+        await update_payment(payment_id=paymentid, payhash=invoice.payment_hash)
 
         return {
-            "pr": payment_request,
+            "pr": invoice.bolt11,
             "routes": [],
         }
     except Exception as e:
