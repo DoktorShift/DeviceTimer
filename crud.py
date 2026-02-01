@@ -3,12 +3,12 @@ from typing import Optional
 
 import shortuuid
 from fastapi import Request
-from lnurl import encode as lnurl_encode
 from loguru import logger
 
 from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
 
+from .helpers import encode_lnurl, is_valid_lnurl
 from .models import (
     CreateLnurldevice,
     Lnurldevice,
@@ -31,11 +31,12 @@ async def create_device(data: CreateLnurldevice, req: Request) -> Lnurldevice:
     device_key = urlsafe_short_hash()
 
     if data.switches:
-        url = req.url_for("devicetimer.lnurl_v2_params", device_id=device_id)
+        base_url = str(req.url_for("devicetimer.lnurl_v2_params", device_id=device_id))
         for _switch in data.switches:
             _switch.id = shortuuid.uuid()[:8]
-            lnurl_obj = lnurl_encode(str(url) + "?switch_id=" + str(_switch.id))
-            _switch.lnurl = str(lnurl_obj).upper()
+            full_url = f"{base_url}?switch_id={_switch.id}"
+            _switch.lnurl = encode_lnurl(full_url)
+            logger.debug(f"Created LNURL for switch {_switch.id}: {_switch.lnurl[:20]}...")
 
     switches_json = json.dumps(
         [s.dict() for s in data.switches] if data.switches else []
@@ -76,16 +77,16 @@ async def update_device(
     device_id: str, data: CreateLnurldevice, req: Request
 ) -> Lnurldevice:
     if data.switches:
-        url = req.url_for("devicetimer.lnurl_v2_params", device_id=device_id)
+        base_url = str(req.url_for("devicetimer.lnurl_v2_params", device_id=device_id))
         for _switch in data.switches:
             if _switch.id is None:
                 _switch.id = shortuuid.uuid()[:8]
-                lnurl_obj = lnurl_encode(str(url) + "?switch_id=" + str(_switch.id))
-                _switch.lnurl = str(lnurl_obj).upper()
-            elif not _switch.lnurl or not _switch.lnurl.upper().startswith("LNURL"):
-                # Re-encode if lnurl is missing or invalid
-                lnurl_obj = lnurl_encode(str(url) + "?switch_id=" + str(_switch.id))
-                _switch.lnurl = str(lnurl_obj).upper()
+
+            # Always regenerate LNURL if missing or invalid
+            if not is_valid_lnurl(_switch.lnurl):
+                full_url = f"{base_url}?switch_id={_switch.id}"
+                _switch.lnurl = encode_lnurl(full_url)
+                logger.debug(f"Regenerated LNURL for switch {_switch.id}: {_switch.lnurl[:20]}...")
 
     switches_json = json.dumps(
         [s.dict() for s in data.switches] if data.switches else []

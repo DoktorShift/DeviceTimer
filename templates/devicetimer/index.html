@@ -301,15 +301,29 @@
                 <q-card class="stat-card custom_border" flat>
                     <div class="row items-center stat-item">
                         <div class="col">
-                            <div class="stat-label">Active</div>
-                            <div class="stat-value text-positive">{% raw %}{{ stats.activeDevices }}{% endraw %}</div>
+                            <div class="row items-center">
+                                <div class="col">
+                                    <div class="stat-label">Connected</div>
+                                    <div class="stat-value text-positive">{% raw %}{{ stats.activeSwitches }}{% endraw %}</div>
+                                </div>
+                                <q-separator vertical class="q-mx-sm" style="height: 32px; opacity: 0.2;"></q-separator>
+                                <div class="col">
+                                    <div class="stat-label">Offline</div>
+                                    <div class="stat-value text-grey-6">{% raw %}{{ stats.inactiveSwitches }}{% endraw %}</div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-auto">
-                            <q-avatar size="36px" square class="bg-positive avatar_style text-white">
+                            <q-avatar size="36px" square :class="stats.activeSwitches > 0 ? 'bg-positive' : 'bg-grey-5'" class="avatar_style text-white">
                                 <q-icon size="18px">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
-                                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M9 12l2 2l4-4"/>
+                                        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                            <path d="M12 18v-6"/>
+                                            <path d="M8 18v-2"/>
+                                            <path d="M16 18v-4"/>
+                                            <path d="M6 12a6 6 0 0 1 12 0"/>
+                                            <path d="M3 9a10 10 0 0 1 18 0"/>
+                                        </g>
                                     </svg>
                                 </q-icon>
                             </q-avatar>
@@ -444,7 +458,7 @@
                         <div class="row items-center no-wrap">
                             <span>{% raw %}{{ props.row.title }}{% endraw %}</span>
                             <q-badge
-                                v-if="activeWebsocketDeviceId === props.row.id"
+                                v-if="isDeviceLive(props.row.id)"
                                 color="positive"
                                 class="q-ml-sm"
                                 rounded
@@ -863,7 +877,7 @@
     </q-dialog>
 
     <!-- QR Code Dialog -->
-    <q-dialog v-model="qrCodeDialog.show">
+    <q-dialog v-model="qrCodeDialog.show" @hide="disconnectWebsocket">
         <q-card v-if="qrCodeDialog.data" class="dialog_style" style="width: 420px; max-width: 95vw;">
             <!-- Header -->
             <q-card-section class="q-pb-none">
@@ -873,7 +887,7 @@
                         <div class="text-caption text-grey">Scan with a Lightning wallet</div>
                     </div>
                     <div class="col-auto">
-                        <q-btn flat round dense size="sm" v-close-popup>
+                        <q-btn flat round dense size="sm" @click="closeQrCodeDialog">
                             <q-icon name="close" size="20px"></q-icon>
                         </q-btn>
                     </div>
@@ -940,7 +954,7 @@
                     Copy LNURL
                 </q-btn>
                 <q-space></q-space>
-                <q-btn flat color="grey-7" v-close-popup no-caps>Close</q-btn>
+                <q-btn flat color="grey-7" @click="closeQrCodeDialog" no-caps>Close</q-btn>
             </q-card-actions>
         </q-card>
     </q-dialog>

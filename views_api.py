@@ -4,7 +4,6 @@ import zoneinfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from loguru import logger
-from lnurl import encode as lnurl_encode
 
 from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
@@ -22,6 +21,7 @@ from .crud import (
     get_devices,
     update_device,
 )
+from .helpers import encode_lnurl, is_valid_lnurl
 from .models import CreateLnurldevice, Lnurldevice
 
 
@@ -30,11 +30,11 @@ def fix_device_lnurls(device: Lnurldevice, req: Request) -> Lnurldevice:
     if not device.switches:
         return device
 
-    url = req.url_for("devicetimer.lnurl_v2_params", device_id=device.id)
+    base_url = str(req.url_for("devicetimer.lnurl_v2_params", device_id=device.id))
     for switch in device.switches:
-        if switch.lnurl and not switch.lnurl.upper().startswith("LNURL"):
-            # Re-encode if stored as raw URL
-            switch.lnurl = str(lnurl_encode(str(url) + "?switch_id=" + switch.id)).upper()
+        if not is_valid_lnurl(switch.lnurl):
+            full_url = f"{base_url}?switch_id={switch.id}"
+            switch.lnurl = encode_lnurl(full_url)
 
     return device
 
