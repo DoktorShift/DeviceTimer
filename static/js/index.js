@@ -25,8 +25,9 @@ window.app = Vue.createApp({
 
       stats: {
         totalDevices: 0,
-        activeDevices: 0,
-        totalSwitches: 0
+        totalSwitches: 0,
+        activeSwitches: 0,
+        inactiveSwitches: 0
       },
 
       deviceColumns: [
@@ -61,7 +62,8 @@ window.app = Vue.createApp({
       qrCodeDialog: {
         show: false,
         data: null,
-        selectedSwitch: null
+        selectedSwitch: null,
+        deviceId: null
       },
 
       websocketDialog: {
@@ -126,8 +128,13 @@ window.app = Vue.createApp({
         devices = this.devices.filter(d => d.wallet === this.selectedWallet)
       }
       this.stats.totalDevices = devices.length
-      this.stats.activeDevices = devices.length
       this.stats.totalSwitches = devices.reduce((sum, d) => sum + (d.switches?.length || 0), 0)
+
+      // Count active/inactive based on WebSocket connection
+      const activeDeviceId = this.activeWebsocketDeviceId
+      const connectedDevice = activeDeviceId ? devices.find(d => d.id === activeDeviceId) : null
+      this.stats.activeSwitches = connectedDevice ? (connectedDevice.switches?.length || 0) : 0
+      this.stats.inactiveSwitches = this.stats.totalSwitches - this.stats.activeSwitches
     },
 
     formatHours(device) {
@@ -289,10 +296,11 @@ window.app = Vue.createApp({
         return
       }
       this.qrCodeDialog.data = _.clone(device)
+      this.qrCodeDialog.deviceId = device.id
       this.qrCodeDialog.selectedSwitch = device.switches[0]
       this.lnurlValue = device.switches[0].lnurl
       this.qrcodeUrl = '/devicetimer/device/' + device.id + '/' + device.switches[0].id + '/qrcode?' + Date.now()
-      this.websocketConnector(this.wsLocation + '/api/v1/ws/' + device.id, device.id)
+      this.connectWebsocket(device.id)
       this.qrCodeDialog.show = true
     },
 
@@ -302,10 +310,11 @@ window.app = Vue.createApp({
         return
       }
       this.qrCodeDialog.data = _.clone(device)
+      this.qrCodeDialog.deviceId = device.id
       this.qrCodeDialog.selectedSwitch = sw
       this.lnurlValue = sw.lnurl
       this.qrcodeUrl = '/devicetimer/device/' + device.id + '/' + sw.id + '/qrcode?' + Date.now()
-      this.websocketConnector(this.wsLocation + '/api/v1/ws/' + device.id, device.id)
+      this.connectWebsocket(device.id)
       this.qrCodeDialog.show = true
     },
 
@@ -331,39 +340,65 @@ window.app = Vue.createApp({
       this.deviceDialog.data.switches.splice(index, 1)
     },
 
-    websocketConnector(websocketUrl, deviceId) {
-      if (this.activeWebsocket) {
-        this.activeWebsocket.close()
-      }
+    connectWebsocket(deviceId) {
+      this.disconnectWebsocket()
+
       if (!('WebSocket' in window)) {
         this.websocketMessage = 'WebSocket not supported'
         return
       }
+
+      const websocketUrl = this.wsLocation + '/api/v1/ws/' + deviceId
+      this.websocketMessage = 'Connecting...'
+      this.activeWebsocketDeviceId = deviceId
+
       try {
-        this.websocketMessage = 'Connecting...'
-        this.activeWebsocketDeviceId = deviceId
         const ws = new WebSocket(websocketUrl)
         this.activeWebsocket = ws
+
         ws.onopen = () => {
           this.websocketMessage = 'connected'
+          this.calculateStats()
         }
-        ws.onmessage = evt => {
+
+        ws.onmessage = () => {
           this.websocketMessage = 'Payment received!'
         }
+
         ws.onclose = () => {
           this.websocketMessage = 'Disconnected'
-          this.activeWebsocketDeviceId = null
-          this.activeWebsocket = null
+          if (this.activeWebsocket === ws) {
+            this.activeWebsocket = null
+            this.activeWebsocketDeviceId = null
+          }
         }
+
         ws.onerror = () => {
           this.websocketMessage = 'Connection error'
-          this.activeWebsocketDeviceId = null
-          this.activeWebsocket = null
+          if (this.activeWebsocket === ws) {
+            this.activeWebsocket = null
+            this.activeWebsocketDeviceId = null
+          }
         }
       } catch (e) {
         this.websocketMessage = 'WebSocket error'
         this.activeWebsocketDeviceId = null
       }
+    },
+
+    disconnectWebsocket() {
+      if (this.activeWebsocket) {
+        this.activeWebsocket.close()
+        this.activeWebsocket = null
+        this.activeWebsocketDeviceId = null
+        this.websocketMessage = ''
+        this.calculateStats()
+      }
+    },
+
+    closeQrCodeDialog() {
+      this.qrCodeDialog.show = false
+      this.disconnectWebsocket()
     },
 
     copyText(text, message = 'Copied!') {
@@ -384,6 +419,10 @@ window.app = Vue.createApp({
 
     openDocumentation() {
       window.open('https://github.com/DoktorShift/DeviceTimer', '_blank')
+    },
+
+    isDeviceLive(deviceId) {
+      return this.activeWebsocketDeviceId === deviceId && this.activeWebsocket !== null
     }
   },
 

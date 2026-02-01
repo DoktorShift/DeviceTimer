@@ -15,6 +15,7 @@ import pyqrcode
 import httpx
 
 from .crud import get_device, get_payment_allowed
+from .helpers import encode_lnurl, is_valid_lnurl
 from .models import PaymentAllowed
 
 devicetimer_generic_router = APIRouter()
@@ -109,7 +110,15 @@ async def devicetimer_qrcode(request: Request, deviceid: str, switchid: str):
                 logger.error(f"Failed to retrieve wait image: {e}")
         return default_unavailable_image()
 
-    qr = pyqrcode.create(switch.lnurl)
+    # Ensure LNURL is properly bech32 encoded
+    lnurl_value = switch.lnurl
+    if not is_valid_lnurl(lnurl_value):
+        base_url = str(request.url_for("devicetimer.lnurl_v2_params", device_id=deviceid))
+        full_url = f"{base_url}?switch_id={switchid}"
+        lnurl_value = encode_lnurl(full_url)
+        logger.info(f"Generated LNURL on-the-fly for QR: {lnurl_value[:20]}...")
+
+    qr = pyqrcode.create(lnurl_value)
     stream = BytesIO()
     qr.svg(stream, scale=3)
     stream.seek(0)
