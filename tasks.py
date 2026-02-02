@@ -1,10 +1,11 @@
 import asyncio
 
+from loguru import logger
 from lnbits.core.models import Payment
-from lnbits.core.services import websocket_updater
 from lnbits.tasks import register_invoice_listener
 
 from .crud import get_payment, update_payment, get_device
+from .websocket import send_to_device
 
 
 async def wait_for_paid_invoices() -> None:
@@ -42,6 +43,11 @@ async def on_invoice_paid(payment: Payment) -> None:
     if not switch:
         return
 
-    await websocket_updater(
-        device_payment.deviceid, f"{switch.gpio_pin}-{switch.gpio_duration}"
-    )
+    # Send trigger command to hardware via our WebSocket
+    message = f"{switch.gpio_pin}-{switch.gpio_duration}"
+    sent = await send_to_device(device_payment.deviceid, message)
+
+    if sent:
+        logger.info(f"Payment notification sent to device {device_payment.deviceid}: {message}")
+    else:
+        logger.warning(f"No active connection for device {device_payment.deviceid}")
