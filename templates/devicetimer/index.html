@@ -1096,12 +1096,12 @@
                 </div>
 
                 <!-- WebSocket Status -->
-                <div class="q-mt-sm">
+                <div class="q-mt-sm" v-if="websocketMessage">
                     <q-chip
-                        :color="websocketMessage.includes('connected') ? 'positive' : websocketMessage.includes('Payment') ? 'positive' : 'grey-6'"
+                        :color="websocketMessage.includes('Payment') ? 'positive' : 'grey-6'"
                         text-color="white"
                         size="sm"
-                        :icon="websocketMessage.includes('connected') ? 'wifi' : websocketMessage.includes('Payment') ? 'check_circle' : 'wifi_off'"
+                        :icon="websocketMessage.includes('Payment') ? 'check_circle' : 'visibility'"
                     >
                         {% raw %}{{ wsMessage }}{% endraw %}
                     </q-chip>
