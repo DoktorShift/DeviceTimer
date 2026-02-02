@@ -1,9 +1,11 @@
 {
   "id": "devicetimer",
+  "version": "1.5.1",
   "name": "DeviceTimer",
-  "short_description": "For creating timed Lightning Feeders",
+  "repo": "https://github.com/DoktorShift/DeviceTimer",
+  "short_description": "Time-controlled Bitcoin Lightning switches for IoT devices",
+  "description": "",
   "tile": "/devicetimer/static/image/devicetimer128.png",
-  "version": "1.0.0",
   "min_lnbits_version": "1.4.0",
   "contributors": [
     {
@@ -15,10 +17,23 @@
       "name": "DoktorShift",
       "uri": "https://github.com/DoktorShift",
       "role": "Lead Developer"
+    },
+    {
+      "name": "Business-Bitcoin",
+      "uri": "https://business-bitcoin.de",
+      "role": "Contributor"
     }
   ],
-  "images": [],
+  "images": [
+    {
+      "uri": "https://raw.githubusercontent.com/DoktorShift/DeviceTimer/main/static/image/DeviceTimer_Banner.png"
+    }
+  ],
   "description_md": "https://raw.githubusercontent.com/DoktorShift/DeviceTimer/main/description.md",
   "terms_and_conditions_md": "https://raw.githubusercontent.com/DoktorShift/DeviceTimer/main/toc.md",
-  "license": "MIT"
+  "license": "MIT",
+  "paid_features": "",
+  "tags": ["IoT", "Hardware", "bitcoinSwitch", "Automation"],
+  "donate": "u60311@blink.sv",
+  "hidden": false
 }
