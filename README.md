@@ -25,4 +25,4 @@ href="https://github.com/DoktorShift">DrShift</a>
 <p>💻 If you like this extension and feel like you wanna donate, go ahead.<br>
 Your donation will fund contribution to this and future extensions. A shared part will also go to <a href="https://lnbits.com">LNBits</a> donation wallet.</p>
 
-<p><a href="http://devicetimer.bitcoinswitch.de/">Donation</a></p>
+<p><a href="https://v1.lnbits.de/tipjar/gCxr7AbQzjcxHkicmhTBio">Donation</a></p>
