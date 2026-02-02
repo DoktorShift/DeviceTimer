@@ -4,13 +4,12 @@ DeviceTimer extends the bitcoinSwitch ecosystem, allowing you to create time-con
 
 #### Features
 
-- **Operating Hours** - Set when your device accepts payments (e.g., 09:00 - 17:00)
 - **Cooldown Timeout** - Enforce waiting periods between triggers to prevent abuse
 - **Daily Limits** - Restrict the maximum number of activations per day
-- **Custom Status Images** - Display different images when closed or during cooldown
-- **Multiple Switches** - Configure multiple GPIO outputs per device with individual pricing
-- **Real-time Monitoring** - Track connected devices via WebSocket status indicators
-- **Multi-Currency Support** - Price in sats or fiat (EUR, USD, GBP, and more)
+- **Custom Status Images** - Display images when closed or during cooldown
+- **Multiple Switches** - Configure multiple GPIO outputs per device
+- **Real-time Monitoring** - Track connected devices via WebSocket
+- **Multi-Currency Support** - Price in sats or fiat
 - **Timezone Aware** - Operating hours respect your configured timezone
 
 #### Use Cases
