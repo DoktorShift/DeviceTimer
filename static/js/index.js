@@ -420,7 +420,7 @@ window.app = Vue.createApp({
         this.activeWebsocket = ws
 
         ws.onopen = () => {
-          this.websocketMessage = 'Watching for payments...'
+          this.websocketMessage = 'Connected'
         }
 
         ws.onmessage = (event) => {
