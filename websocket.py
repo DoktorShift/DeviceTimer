@@ -2,93 +2,116 @@
 WebSocket management for DeviceTimer extension.
 
 Handles device connections and message broadcasting.
-Tracks connected devices to show real-time status in UI.
+Tracks connected hardware devices to show real-time status in UI.
+Browser connections (for watching payments) are tracked separately.
 """
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from loguru import logger
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 devicetimer_websocket_router = APIRouter()
 
-# Track connected devices: device_id -> set of WebSocket connections
-# Multiple connections per device are supported (e.g., multiple browser tabs)
-_connected_clients: Dict[str, Set[WebSocket]] = {}
+# Track hardware device connections: device_id -> set of WebSocket connections
+_hardware_clients: Dict[str, Set[WebSocket]] = {}
+
+# Track browser connections (for payment notifications in UI)
+_browser_clients: Dict[str, Set[WebSocket]] = {}
 
 
 def get_connected_device_ids() -> list[str]:
-    """Return list of device IDs with active WebSocket connections."""
-    return list(_connected_clients.keys())
+    """Return list of device IDs with active hardware connections."""
+    return list(_hardware_clients.keys())
 
 
 def is_device_connected(device_id: str) -> bool:
-    """Check if a device has any active WebSocket connections."""
-    return device_id in _connected_clients and len(_connected_clients[device_id]) > 0
+    """Check if a hardware device has any active WebSocket connections."""
+    return device_id in _hardware_clients and len(_hardware_clients[device_id]) > 0
 
 
 async def send_to_device(device_id: str, message: str) -> bool:
     """
-    Send a message to all WebSocket connections for a device.
+    Send a message to all WebSocket connections for a device (hardware + browser).
     Returns True if message was sent to at least one client.
     """
-    if device_id not in _connected_clients:
-        logger.warning(f"No WebSocket connections for device {device_id}")
-        return False
-
     sent = False
-    dead_connections: Set[WebSocket] = set()
 
-    for websocket in _connected_clients[device_id]:
-        try:
-            await websocket.send_text(message)
-            sent = True
-        except Exception as e:
-            logger.debug(f"Failed to send to WebSocket: {e}")
-            dead_connections.add(websocket)
+    # Send to hardware clients
+    if device_id in _hardware_clients:
+        dead_connections: Set[WebSocket] = set()
+        for websocket in _hardware_clients[device_id]:
+            try:
+                await websocket.send_text(message)
+                sent = True
+            except Exception as e:
+                logger.debug(f"Failed to send to hardware: {e}")
+                dead_connections.add(websocket)
+        for ws in dead_connections:
+            _hardware_clients[device_id].discard(ws)
+        if not _hardware_clients[device_id]:
+            del _hardware_clients[device_id]
 
-    # Clean up dead connections
-    for ws in dead_connections:
-        _connected_clients[device_id].discard(ws)
+    # Send to browser clients (so UI shows payment received)
+    if device_id in _browser_clients:
+        dead_connections = set()
+        for websocket in _browser_clients[device_id]:
+            try:
+                await websocket.send_text(message)
+                sent = True
+            except Exception as e:
+                logger.debug(f"Failed to send to browser: {e}")
+                dead_connections.add(websocket)
+        for ws in dead_connections:
+            _browser_clients[device_id].discard(ws)
+        if not _browser_clients[device_id]:
+            del _browser_clients[device_id]
 
-    # Remove device entry if no connections left
-    if device_id in _connected_clients and not _connected_clients[device_id]:
-        del _connected_clients[device_id]
+    if not sent:
+        logger.warning(f"No WebSocket connections for device {device_id}")
 
     return sent
 
 
 @devicetimer_websocket_router.websocket("/api/v1/ws/{device_id}")
-async def websocket_endpoint(websocket: WebSocket, device_id: str):
+async def websocket_endpoint(
+    websocket: WebSocket,
+    device_id: str,
+    type: Optional[str] = Query(default="hardware")
+):
     """
     WebSocket endpoint for device connections.
-    Hardware devices connect here to receive payment notifications.
+
+    Query params:
+        type: "hardware" (default) for ESP32 devices, "browser" for UI connections
     """
     await websocket.accept()
 
-    # Add to tracking
-    if device_id not in _connected_clients:
-        _connected_clients[device_id] = set()
-    _connected_clients[device_id].add(websocket)
+    # Select the appropriate client pool
+    is_browser = type == "browser"
+    clients = _browser_clients if is_browser else _hardware_clients
+    client_type = "browser" if is_browser else "hardware"
 
-    logger.info(f"Device {device_id} connected. Total connections: {len(_connected_clients[device_id])}")
+    # Add to tracking
+    if device_id not in clients:
+        clients[device_id] = set()
+    clients[device_id].add(websocket)
+
+    logger.info(f"{client_type.capitalize()} connected for device {device_id}")
 
     try:
         while True:
-            # Keep connection alive, wait for messages (ping/pong handled automatically)
             data = await websocket.receive_text()
-            # Hardware might send status updates, we just acknowledge
-            logger.debug(f"Received from {device_id}: {data}")
+            logger.debug(f"Received from {device_id} ({client_type}): {data}")
     except WebSocketDisconnect:
-        logger.info(f"Device {device_id} disconnected")
+        logger.info(f"{client_type.capitalize()} disconnected for device {device_id}")
     except Exception as e:
         logger.debug(f"WebSocket error for {device_id}: {e}")
     finally:
-        # Remove from tracking
-        if device_id in _connected_clients:
-            _connected_clients[device_id].discard(websocket)
-            if not _connected_clients[device_id]:
-                del _connected_clients[device_id]
-        logger.info(f"Device {device_id} cleaned up. Connected devices: {list(_connected_clients.keys())}")
+        if device_id in clients:
+            clients[device_id].discard(websocket)
+            if not clients[device_id]:
+                del clients[device_id]
+        logger.debug(f"Connected hardware devices: {list(_hardware_clients.keys())}")
 
 
 @devicetimer_websocket_router.get("/api/v1/ws/status")

@@ -410,8 +410,8 @@ window.app = Vue.createApp({
         return
       }
 
-      // Use extension WebSocket endpoint
-      const websocketUrl = this.wsLocation + '/devicetimer/api/v1/ws/' + deviceId
+      // Use extension WebSocket endpoint with browser type (doesn't count as hardware connection)
+      const websocketUrl = this.wsLocation + '/devicetimer/api/v1/ws/' + deviceId + '?type=browser'
       this.websocketMessage = 'Connecting...'
       this.activeWebsocketDeviceId = deviceId
 
@@ -420,8 +420,7 @@ window.app = Vue.createApp({
         this.activeWebsocket = ws
 
         ws.onopen = () => {
-          this.websocketMessage = 'Connected'
-          this.fetchConnectionStatus()
+          this.websocketMessage = 'Watching for payments...'
         }
 
         ws.onmessage = (event) => {
@@ -431,7 +430,7 @@ window.app = Vue.createApp({
         }
 
         ws.onclose = () => {
-          this.websocketMessage = 'Disconnected'
+          this.websocketMessage = ''
           if (this.activeWebsocket === ws) {
             this.activeWebsocket = null
             this.activeWebsocketDeviceId = null
