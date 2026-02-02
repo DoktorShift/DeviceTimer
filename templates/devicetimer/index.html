@@ -1098,10 +1098,10 @@
                 <!-- WebSocket Status -->
                 <div class="q-mt-sm" v-if="websocketMessage">
                     <q-chip
-                        :color="websocketMessage.includes('Payment') ? 'positive' : 'grey-6'"
+                        :color="websocketMessage === 'Connected' || websocketMessage.includes('Payment') ? 'positive' : 'grey-6'"
                         text-color="white"
                         size="sm"
-                        :icon="websocketMessage.includes('Payment') ? 'check_circle' : 'visibility'"
+                        :icon="websocketMessage === 'Connected' ? 'wifi' : websocketMessage.includes('Payment') ? 'check_circle' : 'wifi_off'"
                     >
                         {% raw %}{{ wsMessage }}{% endraw %}
                     </q-chip>
