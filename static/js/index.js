@@ -18,16 +18,18 @@ window.app = Vue.createApp({
       lnurlValue: '',
       qrcodeUrl: '',
       websocketMessage: '',
-      activeWebsocketDeviceId: null,
       activeWebsocket: null,
+      activeWebsocketDeviceId: null,
+      connectedDevices: [],
+      statusPollInterval: null,
       protocol: window.location.protocol,
       wsLocation: '',
 
       stats: {
         totalDevices: 0,
         totalSwitches: 0,
-        activeSwitches: 0,
-        inactiveSwitches: 0
+        connectedDevices: 0,
+        offlineDevices: 0
       },
 
       deviceColumns: [
@@ -123,11 +125,9 @@ window.app = Vue.createApp({
     },
     filteredDevices() {
       let devices = this.devices
-      // Filter by wallet if not "all"
       if (this.selectedWallet && this.selectedWallet !== 'all') {
         devices = devices.filter(d => d.wallet === this.selectedWallet)
       }
-      // Filter by search term
       if (this.filter) {
         const search = this.filter.toLowerCase()
         devices = devices.filter(d =>
@@ -151,12 +151,10 @@ window.app = Vue.createApp({
 
   methods: {
     onWalletChange() {
-      // Filtering is handled by filteredDevices computed property
       this.calculateStats()
     },
 
     calculateStats() {
-      // Use filtered devices for stats when wallet is selected
       let devices = this.devices
       if (this.selectedWallet && this.selectedWallet !== 'all') {
         devices = this.devices.filter(d => d.wallet === this.selectedWallet)
@@ -164,11 +162,42 @@ window.app = Vue.createApp({
       this.stats.totalDevices = devices.length
       this.stats.totalSwitches = devices.reduce((sum, d) => sum + (d.switches?.length || 0), 0)
 
-      // Count active/inactive based on WebSocket connection
-      const activeDeviceId = this.activeWebsocketDeviceId
-      const connectedDevice = activeDeviceId ? devices.find(d => d.id === activeDeviceId) : null
-      this.stats.activeSwitches = connectedDevice ? (connectedDevice.switches?.length || 0) : 0
-      this.stats.inactiveSwitches = this.stats.totalSwitches - this.stats.activeSwitches
+      // Count connected/offline based on server-side WebSocket tracking
+      const connectedIds = this.connectedDevices
+      const filteredIds = devices.map(d => d.id)
+      this.stats.connectedDevices = connectedIds.filter(id => filteredIds.includes(id)).length
+      this.stats.offlineDevices = this.stats.totalDevices - this.stats.connectedDevices
+    },
+
+    async fetchConnectionStatus() {
+      try {
+        const response = await LNbits.api.request(
+          'GET',
+          '/devicetimer/api/v1/ws/status',
+          this.g.user.wallets[0].inkey
+        )
+        if (response.data && response.data.connected) {
+          this.connectedDevices = response.data.connected
+          this.calculateStats()
+        }
+      } catch (err) {
+        console.warn('Failed to fetch connection status')
+      }
+    },
+
+    startStatusPolling() {
+      // Poll every 60 seconds
+      this.fetchConnectionStatus()
+      this.statusPollInterval = setInterval(() => {
+        this.fetchConnectionStatus()
+      }, 60000)
+    },
+
+    stopStatusPolling() {
+      if (this.statusPollInterval) {
+        clearInterval(this.statusPollInterval)
+        this.statusPollInterval = null
+      }
     },
 
     formatHours(device) {
@@ -178,7 +207,6 @@ window.app = Vue.createApp({
     async getDevices() {
       this.loading = true
       try {
-        // Always fetch all devices using the first wallet's adminkey
         const response = await LNbits.api.request(
           'GET',
           '/devicetimer/api/v1/device',
@@ -382,7 +410,8 @@ window.app = Vue.createApp({
         return
       }
 
-      const websocketUrl = this.wsLocation + '/api/v1/ws/' + deviceId
+      // Use extension WebSocket endpoint
+      const websocketUrl = this.wsLocation + '/devicetimer/api/v1/ws/' + deviceId
       this.websocketMessage = 'Connecting...'
       this.activeWebsocketDeviceId = deviceId
 
@@ -391,12 +420,14 @@ window.app = Vue.createApp({
         this.activeWebsocket = ws
 
         ws.onopen = () => {
-          this.websocketMessage = 'connected'
-          this.calculateStats()
+          this.websocketMessage = 'Connected'
+          this.fetchConnectionStatus()
         }
 
-        ws.onmessage = () => {
+        ws.onmessage = (event) => {
           this.websocketMessage = 'Payment received!'
+          // Refresh status after payment
+          setTimeout(() => this.fetchConnectionStatus(), 1000)
         }
 
         ws.onclose = () => {
@@ -426,7 +457,6 @@ window.app = Vue.createApp({
         this.activeWebsocket = null
         this.activeWebsocketDeviceId = null
         this.websocketMessage = ''
-        this.calculateStats()
       }
     },
 
@@ -442,7 +472,8 @@ window.app = Vue.createApp({
     },
 
     openWebsocketDialog(device) {
-      this.websocketDialog.url = this.wsLocation + '/api/v1/ws/' + device.id
+      // Show extension WebSocket URL for hardware configuration
+      this.websocketDialog.url = this.wsLocation + '/devicetimer/api/v1/ws/' + device.id
       this.websocketDialog.deviceTitle = device.title
       this.websocketDialog.show = true
     },
@@ -498,8 +529,8 @@ window.app = Vue.createApp({
       return amount.toString()
     },
 
-    isDeviceLive(deviceId) {
-      return this.activeWebsocketDeviceId === deviceId && this.activeWebsocket !== null
+    isDeviceConnected(deviceId) {
+      return this.connectedDevices.includes(deviceId)
     }
   },
 
@@ -508,6 +539,7 @@ window.app = Vue.createApp({
     this.wsLocation = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host
 
     await this.getDevices()
+    this.startStatusPolling()
 
     try {
       const response = await LNbits.api.request('GET', '/devicetimer/api/v1/timezones')
@@ -515,5 +547,10 @@ window.app = Vue.createApp({
     } catch (err) {
       console.warn('Failed to load timezones')
     }
+  },
+
+  beforeUnmount() {
+    this.stopStatusPolling()
+    this.disconnectWebsocket()
   }
 })

@@ -8,6 +8,7 @@ from .tasks import wait_for_paid_invoices
 from .views import devicetimer_generic_router
 from .views_api import devicetimer_api_router
 from .lnurl import devicetimer_lnurl_router
+from .websocket import devicetimer_websocket_router
 
 scheduled_tasks: list[asyncio.Task] = []
 
@@ -22,6 +23,7 @@ devicetimer_ext: APIRouter = APIRouter(prefix="/devicetimer", tags=["devicetimer
 devicetimer_ext.include_router(devicetimer_generic_router)
 devicetimer_ext.include_router(devicetimer_api_router)
 devicetimer_ext.include_router(devicetimer_lnurl_router)
+devicetimer_ext.include_router(devicetimer_websocket_router)
 
 
 def devicetimer_stop():
