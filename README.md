@@ -18,7 +18,8 @@ This extension behaves like the standard LNURLdevice extension with the followin
 **(4)** Removed support for devices other that bitcoinSwitch
 <br>
 
-This LNbits extension was built with <a href="https://www.Business-Bitcoin.de">Business-Bitcoin.de</a> and massive support of <a href="https://github.com/pieterjm">Pieterjm</a> & href="https://github.com/DoktorShift">DrShift</a>
+This LNbits extension was built with <a href="https://www.Business-Bitcoin.de">Business-Bitcoin.de</a> and massive support of <a href="https://github.com/pieterjm">Pieterjm</a> & <a
+href="https://github.com/DoktorShift">DrShift</a>
 <br>
 
 <p>💻 If you like this extension and feel like you wanna donate, go ahead.<br>
