@@ -2,7 +2,7 @@ Bring your physical devices to life with Bitcoin Lightning payments and powerful
 
 DeviceTimer extends the bitcoinSwitch ecosystem, allowing you to create time-controlled Lightning-powered devices with ease.
 
-## Features
+#### Features
 
 - **Operating Hours** - Set when your device accepts payments (e.g., 09:00 - 17:00)
 - **Cooldown Timeout** - Enforce waiting periods between triggers to prevent abuse
@@ -13,7 +13,7 @@ DeviceTimer extends the bitcoinSwitch ecosystem, allowing you to create time-con
 - **Multi-Currency Support** - Price in sats or fiat (EUR, USD, GBP, and more)
 - **Timezone Aware** - Operating hours respect your configured timezone
 
-## Use Cases
+#### Use Cases
 
 - Animal feeding machines (zoos, farms, petting areas)
 - Vending machines and product dispensers
@@ -21,10 +21,6 @@ DeviceTimer extends the bitcoinSwitch ecosystem, allowing you to create time-con
 - Access control and gate openers
 - Any IoT device you want to monetize with Bitcoin
 
-## Hardware
+#### Hardware
 
 Works with ESP32-based bitcoinSwitch devices. Flash your device directly from the browser using the [Web Flasher](https://bitcoinswitch.lnbits.com).
-
-## Documentation
-
-Full setup guide and documentation available at [GitHub](https://github.com/DoktorShift/DeviceTimer).
