@@ -7,7 +7,7 @@ Preview:
 <br>
 <br>
 
-This extension behaves like the standard LNURLdevice extension with the following changes:
+This extension behaves like the standard BitcoinSwitch extension with the following changes:
 
 **(1)** Payments available during specified time window. This allows to create a device (for animal feeding or whatever you want to activate) with opening hours so that it is only accessible during a specific time window.
 
